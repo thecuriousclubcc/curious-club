@@ -8,9 +8,9 @@ export const metadata: Metadata = {
 }
 
 const achievements = [
-  { label: '総動画数', value: '50+', unit: '本' },
-  { label: '出演者', value: '30+', unit: '名' },
-  { label: '開始', value: '2023', unit: '年' },
+  { label: '総動画数', value: '60+', unit: '本' },
+  { label: '出演ゲスト', value: '13', unit: '名' },
+  { label: '開始', value: '2025', unit: '年' },
 ]
 
 const values = [
