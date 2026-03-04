@@ -16,14 +16,15 @@ interface ContactPayload {
   email: string
   type: string
   message: string
+  turnstileToken: string
 }
 
 export async function POST(req: NextRequest) {
   try {
     const body: ContactPayload = await req.json()
-    const { name, email, type, message } = body
+    const { name, email, type, message, turnstileToken } = body
 
-    if (!name || !email || !type || !message) {
+    if (!name || !email || !type || !message || !turnstileToken) {
       return NextResponse.json({ error: '必須項目が不足しています' }, { status: 400 })
     }
 
@@ -33,6 +34,20 @@ export async function POST(req: NextRequest) {
 
     if (!typeLabels[type]) {
       return NextResponse.json({ error: '無効なお問い合わせ種別です' }, { status: 400 })
+    }
+
+    // Verify Turnstile token
+    const verifyRes = await fetch('https://challenges.cloudflare.com/turnstile/v0/siteverify', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        secret: process.env.TURNSTILE_SECRET_KEY,
+        response: turnstileToken,
+      }),
+    })
+    const verifyData = await verifyRes.json()
+    if (!verifyData.success) {
+      return NextResponse.json({ error: '認証に失敗しました' }, { status: 400 })
     }
 
     const typeLabel = typeLabels[type]

@@ -1,6 +1,8 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useRef } from 'react'
+import { Turnstile } from '@marsidev/react-turnstile'
+import type { TurnstileInstance } from '@marsidev/react-turnstile'
 
 type FormStatus = 'idle' | 'submitting' | 'success' | 'error'
 
@@ -20,6 +22,7 @@ export default function ContactForm() {
   const [form, setForm] = useState<FormData>({ name: '', email: '', type: '', message: '' })
   const [status, setStatus] = useState<FormStatus>('idle')
   const [errors, setErrors] = useState<Partial<FormData>>({})
+  const turnstileRef = useRef<TurnstileInstance>(null)
 
   const validate = (): boolean => {
     const newErrors: Partial<FormData> = {}
@@ -37,21 +40,29 @@ export default function ContactForm() {
     e.preventDefault()
     if (!validate()) return
 
+    const turnstileToken = turnstileRef.current?.getResponse()
+    if (!turnstileToken) {
+      setStatus('error')
+      return
+    }
+
     setStatus('submitting')
     try {
       const res = await fetch('/api/contact', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(form),
+        body: JSON.stringify({ ...form, turnstileToken }),
       })
       if (res.ok) {
         setStatus('success')
         setForm({ name: '', email: '', type: '', message: '' })
       } else {
         setStatus('error')
+        turnstileRef.current?.reset()
       }
     } catch {
       setStatus('error')
+      turnstileRef.current?.reset()
     }
   }
 
@@ -167,6 +178,12 @@ export default function ContactForm() {
         />
         {errors.message && <p className="mt-1.5 text-xs text-red-500">{errors.message}</p>}
       </div>
+
+      {/* Turnstile */}
+      <Turnstile
+        ref={turnstileRef}
+        siteKey={process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY!}
+      />
 
       {status === 'error' && (
         <div className="p-4 bg-red-50 rounded-xl text-sm text-red-600 border border-red-100">
