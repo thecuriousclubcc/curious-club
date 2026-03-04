@@ -1,6 +1,7 @@
 'use client'
 
 import Link from 'next/link'
+import Image from 'next/image'
 import { usePathname } from 'next/navigation'
 import { useState } from 'react'
 import { Menu, X } from 'lucide-react'
@@ -21,13 +22,14 @@ export default function Header() {
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
-          <Link href="/" className="flex items-center gap-2.5 group">
-            <span className="text-lg font-bold tracking-tight text-slate-900 group-hover:text-teal-700 transition-colors">
-              The Curious Club
-            </span>
-            <span className="text-xs text-slate-400 font-light tracking-widest hidden sm:block">
-              キュリクラ
-            </span>
+          <Link href="/" className="flex items-center gap-2 group">
+            <Image
+              src="/キュリクラアイコン.png"
+              alt="The Curious Club キュリクラ"
+              width={40}
+              height={40}
+              className="rounded-full"
+            />
           </Link>
 
           {/* Desktop nav */}
