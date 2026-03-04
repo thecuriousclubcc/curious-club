@@ -1,4 +1,5 @@
 import type { Metadata } from 'next'
+import Image from 'next/image'
 import Link from 'next/link'
 
 export const metadata: Metadata = {
@@ -137,9 +138,13 @@ export default function AboutPage() {
           <h2 className="text-2xl md:text-3xl font-bold text-slate-900 mb-12">運営者について</h2>
           <div className="max-w-2xl">
             <div className="flex items-start gap-6">
-              <div className="w-20 h-20 rounded-full bg-slate-100 flex-shrink-0 flex items-center justify-center text-slate-400 text-xs border border-slate-200">
-                Photo
-              </div>
+              <Image
+                src="/logo-icon.png"
+                alt="The Curious Club キュリクラ"
+                width={80}
+                height={80}
+                className="rounded-full flex-shrink-0"
+              />
               <div>
                 <h3 className="text-lg font-semibold text-slate-900">
                   The Curious Club 編集部
