@@ -22,7 +22,7 @@ export default function Hero() {
           key={video.youtubeId}
           src={`https://www.youtube.com/embed/${video.youtubeId}?autoplay=1&mute=${muted ? 1 : 0}&loop=1&playlist=${video.youtubeId}&controls=0&showinfo=0&rel=0&playsinline=1&modestbranding=1`}
           allow="autoplay; encrypted-media"
-          className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2"
+          className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none"
           style={{ width: '177.78vh', height: '100vh', minWidth: '100%', minHeight: '56.25vw' }}
         />
       </div>
@@ -33,7 +33,7 @@ export default function Hero() {
       {/* Left arrow */}
       <button
         onClick={prev}
-        className="absolute left-4 top-1/2 -translate-y-1/2 z-10 bg-black/40 hover:bg-black/70 text-white rounded-full p-2 transition-colors backdrop-blur-sm"
+        className="absolute left-4 top-1/2 -translate-y-1/2 z-50 bg-black/40 hover:bg-black/70 text-white rounded-full p-2 transition-colors backdrop-blur-sm"
         aria-label="前の動画"
       >
         <ChevronLeft size={28} />
@@ -42,7 +42,7 @@ export default function Hero() {
       {/* Right arrow */}
       <button
         onClick={next}
-        className="absolute right-4 top-1/2 -translate-y-1/2 z-10 bg-black/40 hover:bg-black/70 text-white rounded-full p-2 transition-colors backdrop-blur-sm"
+        className="absolute right-4 top-1/2 -translate-y-1/2 z-50 bg-black/40 hover:bg-black/70 text-white rounded-full p-2 transition-colors backdrop-blur-sm"
         aria-label="次の動画"
       >
         <ChevronRight size={28} />
