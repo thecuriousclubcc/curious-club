@@ -27,7 +27,15 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: '必須項目が不足しています' }, { status: 400 })
     }
 
-    const typeLabel = typeLabels[type] ?? type
+    if (name.length > 100 || email.length > 254 || message.length > 3000) {
+      return NextResponse.json({ error: '入力内容が長すぎます' }, { status: 400 })
+    }
+
+    if (!typeLabels[type]) {
+      return NextResponse.json({ error: '無効なお問い合わせ種別です' }, { status: 400 })
+    }
+
+    const typeLabel = typeLabels[type]
 
     await resend.emails.send({
       from: 'The Curious Club <onboarding@resend.dev>',
