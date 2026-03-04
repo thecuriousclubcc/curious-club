@@ -6,7 +6,7 @@ import { Volume2, VolumeX, ChevronLeft, ChevronRight } from 'lucide-react'
 import { videos } from '@/data/videos'
 
 export default function Hero() {
-  const [current, setCurrent] = useState(0)
+  const [current, setCurrent] = useState(3)
   const [muted, setMuted] = useState(true)
 
   const prev = () => setCurrent((i) => (i === 0 ? videos.length - 1 : i - 1))

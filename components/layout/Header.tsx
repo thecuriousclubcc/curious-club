@@ -24,11 +24,11 @@ export default function Header() {
           {/* Logo */}
           <Link href="/" className="flex items-center gap-2 group">
             <Image
-              src="/キュリクラアイコン.png"
+              src="/og-image.png"
               alt="The Curious Club キュリクラ"
-              width={40}
-              height={40}
-              className="rounded-full"
+              width={120}
+              height={63}
+              className="object-contain"
             />
           </Link>
 
