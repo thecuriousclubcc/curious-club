@@ -24,7 +24,7 @@ export default function Header() {
           {/* Logo */}
           <Link href="/" className="flex items-center gap-2 group">
             <Image
-              src="/キュリクラアイコン.png"
+              src="/logo-icon.png"
               alt="The Curious Club キュリクラ"
               width={60}
               height={60}
