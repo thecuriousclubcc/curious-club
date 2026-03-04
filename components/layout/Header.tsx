@@ -51,7 +51,7 @@ export default function Header() {
               href="/contact"
               className="text-sm bg-teal-700 text-white px-5 py-2 rounded-full hover:bg-teal-800 transition-colors font-medium"
             >
-              相談する
+              お問い合わせ
             </Link>
           </nav>
 
@@ -88,7 +88,7 @@ export default function Header() {
                 className="mt-2 text-sm bg-teal-700 text-white px-4 py-3 rounded-xl hover:bg-teal-800 transition-colors text-center font-medium"
                 onClick={() => setIsOpen(false)}
               >
-                相談する
+                お問い合わせ
               </Link>
             </nav>
           </div>
