@@ -1,4 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { Resend } from 'resend'
+
+const resend = new Resend(process.env.RESEND_API_KEY)
+
+const typeLabels: Record<string, string> = {
+  appearance: '出演依頼',
+  interview: '取材・インタビュー依頼',
+  collaboration: 'コラボレーション・タイアップ',
+  media: 'メディア掲載・転載許可',
+  other: 'その他',
+}
 
 interface ContactPayload {
   name: string
@@ -16,12 +27,15 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: '必須項目が不足しています' }, { status: 400 })
     }
 
-    // TODO: メール送信ロジックをここに追加
-    // 例: Resend, SendGrid, Nodemailer など
-    // 送信先: thecuriousclub.cc@gmail.com
-    // await sendEmail({ to: 'thecuriousclub.cc@gmail.com', from: email, subject: `[お問い合わせ] ${type}`, body: ... })
+    const typeLabel = typeLabels[type] ?? type
 
-    console.log('[Contact Form]', { name, email, type, message })
+    await resend.emails.send({
+      from: 'The Curious Club <onboarding@resend.dev>',
+      to: 'thecuriousclub.cc@gmail.com',
+      replyTo: email,
+      subject: `[お問い合わせ] ${typeLabel} — ${name}`,
+      text: `■ お問い合わせ種別\n${typeLabel}\n\n■ お名前\n${name}\n\n■ メールアドレス\n${email}\n\n■ メッセージ\n${message}`,
+    })
 
     return NextResponse.json({ message: '送信が完了しました' }, { status: 200 })
   } catch (error) {
