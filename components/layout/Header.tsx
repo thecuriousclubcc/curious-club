@@ -26,8 +26,8 @@ export default function Header() {
             <Image
               src="/キュリクラアイコン.png"
               alt="The Curious Club キュリクラ"
-              width={44}
-              height={44}
+              width={60}
+              height={60}
               className="rounded-full"
             />
           </Link>
