@@ -55,14 +55,14 @@ export default function Hero() {
             The Curious Club — キュリクラ
           </p>
           <h1 className="text-5xl md:text-7xl font-bold text-white leading-tight tracking-tight">
-            好奇心で、
+            あなたの問い、決断、
             <br />
-            世界をひらく。
+            リアルな生き方に迫る。
           </h1>
           <p className="mt-7 text-lg md:text-xl text-slate-200 leading-relaxed max-w-2xl">
-            医療と社会のリアルを、会話で届ける。
+            現役医学生による対話型インタビュー企画。
             <br className="hidden sm:block" />
-            台本なしの対談から生まれる、学びと熱量のチャンネル。
+            その人の問い、決断、リアルな生き方・キャリアを掘り下げます。
           </p>
           <div className="mt-10 flex flex-col sm:flex-row gap-4">
             <a

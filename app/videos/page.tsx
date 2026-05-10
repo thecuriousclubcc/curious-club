@@ -5,7 +5,7 @@ import VideoCard from '@/components/videos/VideoCard'
 export const metadata: Metadata = {
   title: '動画一覧',
   description:
-    'The Curious Club（キュリクラ）の全動画一覧。医療と社会をテーマにした対談・インタビュー動画をご覧いただけます。',
+    'The Curious Club（キュリクラ）の全動画一覧。分野を超えて"熱を持って生きる人"に迫った対話型インタビューをご覧いただけます。',
 }
 
 export default function VideosPage() {

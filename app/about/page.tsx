@@ -5,7 +5,7 @@ import Link from 'next/link'
 export const metadata: Metadata = {
   title: 'About',
   description:
-    'The Curious Club（キュリクラ）について。チャンネルの活動内容、価値観、運営者情報、出演・取材依頼の流れをご紹介します。',
+    'The Curious Club（キュリクラ）について。現役医学生による対話型インタビュー企画の活動内容、価値観、出演・取材依頼の流れをご紹介します。',
 }
 
 const achievements = [
@@ -16,16 +16,16 @@ const achievements = [
 
 const values = [
   {
-    title: '台本なしの会話',
-    body: '事前に話す内容を決めすぎません。その場で生まれる問いや気づきが、番組の核心だと考えているからです。',
+    title: '問い・決断・生き方に迫る',
+    body: '肩書きや実績よりも、その人の葛藤、違和感、選択の瞬間を大切にしています。どんな問いを持ち、どう決断してきたかに迫ります。',
   },
   {
-    title: '医療の「リアル」を届ける',
-    body: '美化せず、難しくもせず。現場にいる人の言葉で、医療と社会のリアルを丁寧に届けます。',
+    title: '台本なしの対話',
+    body: '事前に話す内容を決めすぎません。その場で生まれる問いと答えが、番組の核心だと考えているからです。',
   },
   {
-    title: '多様な視点の交差',
-    body: '医師だけでなく、看護師・薬剤師・患者・研究者・医療経営者など、様々な立場のゲストをお招きします。',
+    title: '分野を超えたゲスト',
+    body: '医療はもちろん、教育、ビジネス、社会、カルチャーなど、さまざまな領域で"熱を持って生きる人"をお招きします。',
   },
   {
     title: '誠実さを最優先に',
@@ -67,9 +67,9 @@ export default function AboutPage() {
       <div className="bg-slate-50 py-20 border-b border-slate-100">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
           <p className="text-teal-700 text-xs font-medium tracking-widest uppercase mb-3">About</p>
-          <h1 className="text-3xl md:text-4xl font-bold text-slate-900">チャンネルについて</h1>
+          <h1 className="text-3xl md:text-4xl font-bold text-slate-900">キュリクラについて</h1>
           <p className="mt-4 text-slate-600 max-w-xl leading-relaxed text-sm">
-            The Curious Club（キュリクラ）は、医療と社会を題材にした対談・インタビューチャンネルです。好奇心を起点に、様々なゲストとリアルな会話を重ねています。
+            現役医学生による対話型インタビュー企画。医療、教育、ビジネス、社会、カルチャーなど、分野を超えて"熱を持って生きる人"に出会い、その人の問い、決断、リアルな生き方・キャリアに迫ります。
           </p>
         </div>
       </div>
@@ -83,19 +83,19 @@ export default function AboutPage() {
                 Mission
               </p>
               <h2 className="text-2xl md:text-3xl font-bold text-slate-900 leading-tight mb-6">
-                「知る」ことが、
+                「この人は、どんな問いを持って
                 <br />
-                世界への入口になる。
+                どう決断して、生きてきたのか。」
               </h2>
               <div className="space-y-5 text-slate-600 leading-relaxed text-sm">
                 <p>
-                  医療の世界は、多くの人にとってまだ遠い存在です。病院に行かなければ接点がなく、専門的な情報は難解で、現場の人の声はほとんど届かない。
+                  キャリアのこと、葛藤のこと、選択の分岐点——。そういう話を、正直に語ってくれる大人に出会える機会は、思ったより少ない。
                 </p>
                 <p>
-                  そこに「会話」という入口を作りたいと考えています。対談形式で、ゲストの生の言葉を引き出すことで、医療や社会の「リアル」を届けていきます。
+                  キュリクラは、肩書きよりも"その人の内側"に迫るインタビュー企画です。医療、教育、ビジネス、社会、カルチャーなど分野を超えて、熱を持って生きるゲストと対話を重ねています。
                 </p>
                 <p>
-                  視聴者の皆さんにとって、このチャンネルが「好奇心で世界をひらく」きっかけになれば幸いです。
+                  「この人の話、聞いてよかった」「自分もこう考えてみよう」——見た人にとって、そんなきっかけになれれば。それが、一番の目標です。
                 </p>
               </div>
             </div>
@@ -151,7 +151,7 @@ export default function AboutPage() {
                 </h3>
                 <p className="text-sm text-slate-500 mt-1">チャンネル運営・企画・編集</p>
                 <p className="mt-4 text-sm text-slate-600 leading-relaxed">
-                  医療と社会の交差点に立ち、「知ること」と「伝えること」を追求しています。好奇心を道しるべに、様々なゲストとの会話を重ねていきます。
+                  現役医学生として、医療の内側と外側の両方に好奇心を持ち、「自分が話を聞きたい人」に会いに行くことをモチベーションに活動しています。
                 </p>
                 <p className="mt-3 text-xs text-slate-400">
                   ※ 詳細プロフィールは準備中です。

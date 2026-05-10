@@ -13,15 +13,15 @@ const notoSansJP = Noto_Sans_JP({
 
 export const metadata: Metadata = {
   title: {
-    default: 'The Curious Club（キュリクラ）| 医療と社会を対話でひらく',
+    default: 'The Curious Club（キュリクラ）| あなたの問い、決断、リアルな生き方に迫る。',
     template: '%s | The Curious Club（キュリクラ）',
   },
   description:
-    '好奇心で世界をひらく。医療と社会のリアルを、会話で届けるYouTubeチャンネル「The Curious Club（キュリクラ）」公式サイト。出演・取材・お仕事のご依頼もお気軽にどうぞ。',
-  keywords: ['医療', 'YouTube', '対談', 'インタビュー', 'The Curious Club', 'キュリクラ'],
+    '現役医学生による対話型インタビュー企画。医療、教育、ビジネス、社会、カルチャーなど、分野を超えて"熱を持って生きる人"に出会い、その人の問い、決断、リアルな生き方・キャリアに迫ります。',
+  keywords: ['医学生', 'インタビュー', '対話', 'キャリア', 'The Curious Club', 'キュリクラ'],
   openGraph: {
-    title: 'The Curious Club（キュリクラ）| 医療と社会を対話でひらく',
-    description: '好奇心で世界をひらく。医療と社会のリアルを、会話で届ける。',
+    title: 'The Curious Club（キュリクラ）| あなたの問い、決断、リアルな生き方に迫る。',
+    description: '分野を超えて"熱を持って生きる人"に会いに行く。現役医学生による対話型インタビュー企画。',
     url: 'https://curious-club.jp',
     siteName: 'The Curious Club（キュリクラ）',
     locale: 'ja_JP',
@@ -38,7 +38,7 @@ export const metadata: Metadata = {
   twitter: {
     card: 'summary_large_image',
     title: 'The Curious Club（キュリクラ）',
-    description: '好奇心で世界をひらく。医療と社会のリアルを、会話で届ける。',
+    description: '分野を超えて"熱を持って生きる人"に会いに行く。現役医学生による対話型インタビュー企画。',
     images: ['/og-image.png'],
   },
 }

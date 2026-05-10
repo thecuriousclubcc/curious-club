@@ -40,9 +40,9 @@ export default function Footer() {
             <p className="text-white text-base font-bold tracking-tight">The Curious Club</p>
             <p className="text-slate-500 text-xs tracking-widest mt-1">キュリクラ</p>
             <p className="mt-5 text-sm leading-relaxed">
-              好奇心で世界をひらく。
+              あなたの問い、決断、リアルな生き方に迫る。
               <br />
-              医療と社会のリアルを、会話で届ける。
+              現役医学生による対話型インタビュー企画。
             </p>
           </div>
 
