@@ -4,7 +4,8 @@ import { getAllVideos } from '@/lib/videos'
 import { getEnrichment } from '@/lib/enrichment'
 import { rateLimit, clientIp } from '@/lib/rate-limit'
 
-const groq = new Groq({ apiKey: process.env.GROQ_API_KEY })
+// Lazy init so builds don't fail when GROQ_API_KEY is absent
+function getGroq() { return new Groq({ apiKey: process.env.GROQ_API_KEY }) }
 
 // Abuse guards — keep the free Groq quota safe
 const RATE_LIMIT = 10 // requests
@@ -96,7 +97,7 @@ export async function POST(req: NextRequest) {
 
   const systemPrompt = await buildSystemPrompt()
 
-  const stream = await groq.chat.completions.create({
+  const stream = await getGroq().chat.completions.create({
     model: 'llama-3.3-70b-versatile',
     messages: [{ role: 'system', content: systemPrompt }, ...messages],
     max_tokens: 1024,

@@ -2,7 +2,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import Groq from 'groq-sdk'
 import { saveEnrichment, type Enrichment } from '@/lib/enrichment'
 
-const groq = new Groq({ apiKey: process.env.GROQ_API_KEY })
+// Lazy init so builds don't fail when GROQ_API_KEY is absent
+function getGroq() { return new Groq({ apiKey: process.env.GROQ_API_KEY }) }
 
 export async function POST(req: NextRequest) {
   const authHeader = req.headers.get('x-enrich-secret')
@@ -38,7 +39,7 @@ export async function POST(req: NextRequest) {
   "suggestedQuestions": ["視聴後に考えるべき問い（最大3つ）"]
 }`
 
-  const completion = await groq.chat.completions.create({
+  const completion = await getGroq().chat.completions.create({
     model: 'llama-3.3-70b-versatile',
     messages: [{ role: 'user', content: prompt }],
     max_tokens: 2048,

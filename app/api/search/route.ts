@@ -4,7 +4,8 @@ import { getAllVideos } from '@/lib/videos'
 import { getEnrichment } from '@/lib/enrichment'
 import { rateLimit, clientIp } from '@/lib/rate-limit'
 
-const groq = new Groq({ apiKey: process.env.GROQ_API_KEY })
+// Lazy init so builds don't fail when GROQ_API_KEY is absent
+function getGroq() { return new Groq({ apiKey: process.env.GROQ_API_KEY }) }
 
 // The client searches locally first and only calls this endpoint as a
 // semantic fallback, so a tight limit is fine
@@ -52,7 +53,7 @@ ${JSON.stringify(episodeIndex, null, 2)}
 - 以下のJSON形式のみで返してください（説明不要）:
 {"rankedIds": ["youtubeId1", "youtubeId2"]}`
 
-  const completion = await groq.chat.completions.create({
+  const completion = await getGroq().chat.completions.create({
     model: 'llama-3.3-70b-versatile',
     messages: [{ role: 'user', content: prompt }],
     max_tokens: 256,
