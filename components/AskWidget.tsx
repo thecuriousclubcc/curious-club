@@ -37,6 +37,19 @@ export default function AskWidget() {
     if (open) inputRef.current?.focus()
   }, [open])
 
+  // Suggested-question taps elsewhere on the page open the widget pre-filled
+  useEffect(() => {
+    function onAsk(e: Event) {
+      const q = (e as CustomEvent<string>).detail
+      if (typeof q === 'string' && q.trim()) {
+        setOpen(true)
+        setInput(q.trim())
+      }
+    }
+    window.addEventListener('ask-widget:ask', onAsk)
+    return () => window.removeEventListener('ask-widget:ask', onAsk)
+  }, [])
+
   async function send() {
     const text = input.trim()
     if (!text || streaming) return
@@ -132,7 +145,7 @@ export default function AskWidget() {
           <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100 bg-teal-700 text-white">
             <div>
               <p className="text-sm font-semibold">Ask the Club</p>
-              <p className="text-xs text-teal-200">Powered by Claude Fable 5</p>
+              <p className="text-xs text-teal-200">エピソードについてAIが答えます</p>
             </div>
             <button
               onClick={() => setOpen(false)}

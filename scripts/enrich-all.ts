@@ -1,9 +1,12 @@
 /**
- * Run once to batch-enrich all episodes with Fable 5.
- * Usage (from the curious-club directory):
- *   npx tsx scripts/enrich-all.ts
+ * Batch-enrich episodes via /api/enrich (Groq). Episodes that already have an
+ * enrichment JSON in public/data/enrichments/ are skipped, so it's safe to
+ * re-run whenever a new episode is published. Use --force to regenerate all.
  *
- * Requires ANTHROPIC_API_KEY and ENRICH_SECRET in .env.local,
+ * Usage (from the curious-club directory):
+ *   npx tsx scripts/enrich-all.ts [--force]
+ *
+ * Requires GROQ_API_KEY and ENRICH_SECRET in .env.local,
  * and the dev server running at BASE_URL (default: http://localhost:3000).
  */
 
@@ -30,10 +33,13 @@ function loadEnvLocal() {
 
 loadEnvLocal()
 
-import { videos } from '../data/videos.js'
+import { existsSync } from 'fs'
+import { getAllVideos } from '../lib/videos.js'
 
 const BASE_URL = process.env.BASE_URL ?? 'http://localhost:3000'
 const SECRET = process.env.ENRICH_SECRET ?? ''
+const FORCE = process.argv.includes('--force')
+const ENRICHMENTS_DIR = join(process.cwd(), 'public', 'data', 'enrichments')
 
 async function enrichOne(videoId: string, title: string, description: string) {
   const res = await fetch(`${BASE_URL}/api/enrich`, {
@@ -57,9 +63,21 @@ async function main() {
     process.exit(1)
   }
 
-  console.log(`Enriching ${videos.length} episodes via ${BASE_URL}/api/enrich\n`)
+  // Includes episodes auto-discovered from the YouTube RSS feed
+  const videos = await getAllVideos()
 
-  for (const video of videos) {
+  const pending = FORCE
+    ? videos
+    : videos.filter((v) => !existsSync(join(ENRICHMENTS_DIR, `${v.youtubeId}.json`)))
+
+  if (pending.length === 0) {
+    console.log('All episodes are already enriched. Use --force to regenerate.')
+    return
+  }
+
+  console.log(`Enriching ${pending.length} of ${videos.length} episodes via ${BASE_URL}/api/enrich\n`)
+
+  for (const video of pending) {
     process.stdout.write(`[${video.id.padStart(2)}] ${video.title.slice(0, 50)}… `)
     try {
       const result = await enrichOne(video.youtubeId, video.title, video.description)

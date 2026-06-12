@@ -1,22 +1,26 @@
 import { NextRequest, NextResponse } from 'next/server'
 import Groq from 'groq-sdk'
-import { videos as staticVideos } from '@/data/videos'
-import { getChannelVideos } from '@/lib/youtube'
+import { getAllVideos } from '@/lib/videos'
 import { getEnrichment } from '@/lib/enrichment'
+import { rateLimit, clientIp } from '@/lib/rate-limit'
 
 const groq = new Groq({ apiKey: process.env.GROQ_API_KEY })
 
-const CHANNEL_ID = process.env.YOUTUBE_CHANNEL_ID ?? ''
-
-async function getAllVideos() {
-  const liveVideos = CHANNEL_ID ? await getChannelVideos(CHANNEL_ID).catch(() => []) : []
-  return liveVideos.length > 0 ? liveVideos : staticVideos
-}
+// The client searches locally first and only calls this endpoint as a
+// semantic fallback, so a tight limit is fine
+const RATE_LIMIT = 10
+const RATE_WINDOW_MS = 60_000
+const MAX_QUERY_CHARS = 100
 
 export async function GET(req: NextRequest) {
   const query = req.nextUrl.searchParams.get('q')?.trim()
-  if (!query || query.length < 2) {
+  if (!query || query.length < 2 || query.length > MAX_QUERY_CHARS) {
     return NextResponse.json({ results: [] })
+  }
+
+  const { ok } = rateLimit(`search:${clientIp(req)}`, RATE_LIMIT, RATE_WINDOW_MS)
+  if (!ok) {
+    return NextResponse.json({ error: 'rate limit exceeded' }, { status: 429 })
   }
 
   const videos = await getAllVideos()

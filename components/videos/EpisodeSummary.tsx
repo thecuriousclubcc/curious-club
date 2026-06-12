@@ -1,5 +1,6 @@
 import type { Enrichment } from '@/lib/enrichment'
 import { Sparkles, Quote } from 'lucide-react'
+import SuggestedQuestions from '@/components/videos/SuggestedQuestions'
 
 interface Props {
   enrichment: Enrichment
@@ -46,20 +47,8 @@ export default function EpisodeSummary({ enrichment }: Props) {
         </div>
       )}
 
-      {/* Suggested questions */}
-      {enrichment.suggestedQuestions.length > 0 && (
-        <div className="pt-2">
-          <p className="text-xs font-medium text-slate-500 mb-3">この動画を見たら考えたいこと</p>
-          <ul className="space-y-2">
-            {enrichment.suggestedQuestions.map((q, i) => (
-              <li key={i} className="flex items-start gap-2 text-sm text-slate-600">
-                <span className="text-teal-500 mt-0.5 shrink-0">Q.</span>
-                {q}
-              </li>
-            ))}
-          </ul>
-        </div>
-      )}
+      {/* Suggested questions — tappable, open the AI chat widget */}
+      <SuggestedQuestions questions={enrichment.suggestedQuestions} />
     </div>
   )
 }

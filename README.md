@@ -1,7 +1,7 @@
 # The Curious Club（キュリクラ）公式サイト
 
 YouTubeチャンネル「The Curious Club（キュリクラ）」の公式Webサイトです。
-Next.js 14 + TypeScript + Tailwind CSS で構築されています。
+Next.js 16 + TypeScript + Tailwind CSS で構築されています。
 
 ## ページ構成
 
@@ -14,7 +14,7 @@ Next.js 14 + TypeScript + Tailwind CSS で構築されています。
 
 ## 技術スタック
 
-- **Framework**: Next.js 14 (App Router)
+- **Framework**: Next.js 16 (App Router)
 - **Language**: TypeScript
 - **Styling**: Tailwind CSS
 - **Icons**: lucide-react
@@ -55,6 +55,22 @@ pnpm dev
 ---
 
 ## カスタマイズ
+
+### 動画データの自動取得
+
+動画一覧は `lib/videos.ts` が次の優先順位で取得します（APIキー不要で自動更新されます）：
+
+1. **YouTube Data API** — `YOUTUBE_API_KEY` を設定した場合（再生数・動画時間つき）
+2. **YouTube RSSフィード** — キー不要・無料。最新の動画を自動取得し、`data/videos.ts` にマージします（Shortsは除外）
+3. **`data/videos.ts`** — 静的フォールバック
+
+新エピソード公開後は何もしなくても1時間以内（ISR）にサイトへ反映されます。タグやおすすめ表示（`featured`）をキュレーションしたい場合は `data/videos.ts` に追記してください。
+
+新エピソードのAI要約を生成するには（既存分はスキップされます）：
+
+```bash
+npx tsx scripts/enrich-all.ts
+```
 
 ### 動画データの差し替え
 

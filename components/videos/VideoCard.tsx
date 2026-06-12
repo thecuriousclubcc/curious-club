@@ -1,6 +1,6 @@
-import Image from 'next/image'
 import Link from 'next/link'
 import type { Video } from '@/data/videos'
+import VideoThumbnail from '@/components/videos/VideoThumbnail'
 
 interface VideoCardProps {
   video: Video
@@ -13,13 +13,7 @@ export default function VideoCard({ video }: VideoCardProps) {
       className="group block bg-white rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition-all duration-300 border border-slate-100"
     >
       <div className="relative aspect-video overflow-hidden bg-slate-100">
-        <Image
-          src={video.thumbnailUrl}
-          alt={video.title}
-          fill
-          className="object-cover group-hover:scale-105 transition-transform duration-500"
-          unoptimized
-        />
+        <VideoThumbnail src={video.thumbnailUrl} alt={video.title} />
         <div className="absolute inset-0 flex items-center justify-center">
           <div className="w-12 h-12 rounded-full bg-white/90 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity shadow">
             <svg

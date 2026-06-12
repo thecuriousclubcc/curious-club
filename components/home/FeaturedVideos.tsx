@@ -1,8 +1,10 @@
 import Link from 'next/link'
-import Image from 'next/image'
-import { featuredVideos } from '@/data/videos'
+import { getFeaturedVideos } from '@/lib/videos'
+import VideoThumbnail from '@/components/videos/VideoThumbnail'
 
-export default function FeaturedVideos() {
+export default async function FeaturedVideos() {
+  const featuredVideos = await getFeaturedVideos()
+
   return (
     <section className="py-24 bg-slate-50">
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -29,13 +31,7 @@ export default function FeaturedVideos() {
               className="group block bg-white rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition-all duration-300"
             >
               <div className="relative aspect-video overflow-hidden bg-slate-100">
-                <Image
-                  src={video.thumbnailUrl}
-                  alt={video.title}
-                  fill
-                  unoptimized
-                  className="object-cover group-hover:scale-105 transition-transform duration-500"
-                />
+                <VideoThumbnail src={video.thumbnailUrl} alt={video.title} />
                 {/* Play button overlay */}
                 <div className="absolute inset-0 flex items-center justify-center">
                   <div className="w-14 h-14 rounded-full bg-white/90 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity shadow-lg">

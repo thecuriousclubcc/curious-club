@@ -1,22 +1,14 @@
 import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
-import Image from 'next/image'
 import Link from 'next/link'
-import { videos as staticVideos } from '@/data/videos'
-import { getChannelVideos } from '@/lib/youtube'
+import { getAllVideos } from '@/lib/videos'
 import { getEnrichment } from '@/lib/enrichment'
+import { SITE_URL } from '@/lib/site'
 import EpisodeSummary from '@/components/videos/EpisodeSummary'
 import CareerInsights from '@/components/videos/CareerInsights'
 import { ExternalLink, ArrowLeft } from 'lucide-react'
 
 export const revalidate = 3600
-
-const CHANNEL_ID = process.env.YOUTUBE_CHANNEL_ID ?? ''
-
-async function getAllVideos() {
-  const liveVideos = CHANNEL_ID ? await getChannelVideos(CHANNEL_ID).catch(() => []) : []
-  return liveVideos.length > 0 ? liveVideos : staticVideos
-}
 
 export async function generateStaticParams() {
   const videos = await getAllVideos()
@@ -75,7 +67,7 @@ export default async function EpisodePage({
     publisher: {
       '@type': 'Organization',
       name: 'The Curious Club（キュリクラ）',
-      url: 'https://curious-club.jp',
+      url: SITE_URL,
     },
   }
 

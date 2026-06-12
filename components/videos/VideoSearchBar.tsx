@@ -31,6 +31,19 @@ export default function VideoSearchBar({ videos }: Props) {
   // Collect all unique tags from videos
   const allTags = Array.from(new Set(videos.flatMap((v) => v.tags))).slice(0, 12)
 
+  // Instant local keyword match over title / description / tags.
+  // Every whitespace-separated term must appear somewhere in the video.
+  const localMatch = useCallback(
+    (q: string): Video[] => {
+      const terms = q.toLowerCase().split(/\s+/).filter(Boolean)
+      return videos.filter((v) => {
+        const haystack = `${v.title} ${v.description} ${v.tags.join(' ')}`.toLowerCase()
+        return terms.every((term) => haystack.includes(term))
+      })
+    },
+    [videos],
+  )
+
   const search = useCallback(
     async (q: string) => {
       if (abortRef.current) abortRef.current.abort()
@@ -42,8 +55,18 @@ export default function VideoSearchBar({ videos }: Props) {
         return
       }
 
-      setLoading(true)
       setHasSearched(true)
+
+      // Local keyword search first — free and instant
+      const local = localMatch(q)
+      if (local.length > 0) {
+        setResults(local)
+        setLoading(false)
+        return
+      }
+
+      // No keyword hits — fall back to AI semantic search
+      setLoading(true)
       try {
         const res = await fetch(
           `/api/search?q=${encodeURIComponent(q)}`,
@@ -52,21 +75,18 @@ export default function VideoSearchBar({ videos }: Props) {
         if (res.ok) {
           const data = await res.json()
           setResults(data.results as Video[])
+        } else {
+          setResults([])
         }
       } catch (err: unknown) {
         if (err instanceof Error && err.name !== 'AbortError') {
-          // Fall back to basic title match on error
-          const lower = q.toLowerCase()
-          setResults(videos.filter((v) =>
-            v.title.toLowerCase().includes(lower) ||
-            v.description.toLowerCase().includes(lower),
-          ))
+          setResults([])
         }
       } finally {
         setLoading(false)
       }
     },
-    [videos, activeTag],
+    [videos, activeTag, localMatch],
   )
 
   useEffect(() => {

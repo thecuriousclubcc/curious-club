@@ -1,15 +1,28 @@
 import { NextRequest } from 'next/server'
 import Groq from 'groq-sdk'
-import { videos as staticVideos } from '@/data/videos'
-import { getChannelVideos } from '@/lib/youtube'
+import { getAllVideos } from '@/lib/videos'
 import { getEnrichment } from '@/lib/enrichment'
+import { rateLimit, clientIp } from '@/lib/rate-limit'
 
 const groq = new Groq({ apiKey: process.env.GROQ_API_KEY })
-const CHANNEL_ID = process.env.YOUTUBE_CHANNEL_ID ?? ''
+
+// Abuse guards — keep the free Groq quota safe
+const RATE_LIMIT = 10 // requests
+const RATE_WINDOW_MS = 60_000 // per minute per IP
+const MAX_MESSAGES = 12
+const MAX_MESSAGE_CHARS = 1000
+
+// Building the system prompt reads every enrichment file; cache it instead of
+// rebuilding on each message
+const PROMPT_TTL_MS = 60 * 60 * 1000
+let cachedPrompt: { value: string; builtAt: number } | null = null
 
 async function buildSystemPrompt(): Promise<string> {
-  const liveVideos = CHANNEL_ID ? await getChannelVideos(CHANNEL_ID).catch(() => []) : []
-  const videos = liveVideos.length > 0 ? liveVideos : staticVideos
+  if (cachedPrompt && Date.now() - cachedPrompt.builtAt < PROMPT_TTL_MS) {
+    return cachedPrompt.value
+  }
+
+  const videos = await getAllVideos()
 
   const enrichments = await Promise.all(
     videos.map(async (v) => {
@@ -25,7 +38,7 @@ async function buildSystemPrompt(): Promise<string> {
     }),
   )
 
-  return `あなたは「The Curious Club（キュリクラ）」のAIアシスタントです。
+  const prompt = `あなたは「The Curious Club（キュリクラ）」のAIアシスタントです。
 現役医学生が分野を超えて"熱を持って生きる人"にインタビューするYouTubeチャンネルのナビゲーターとして振る舞ってください。
 
 以下はこのチャンネルで公開されているエピソードの一覧です：
@@ -38,14 +51,47 @@ ${JSON.stringify(enrichments, null, 2)}
 - 関係のない話題には丁寧に断りを入れてください
 - 回答は日本語で、簡潔かつ親しみやすいトーンで行ってください
 - Markdownは使用せず、プレーンテキストで回答してください`
+
+  cachedPrompt = { value: prompt, builtAt: Date.now() }
+  return prompt
+}
+
+interface ChatMessage {
+  role: 'user' | 'assistant'
+  content: string
+}
+
+function validateMessages(input: unknown): ChatMessage[] | null {
+  if (!Array.isArray(input) || input.length === 0 || input.length > MAX_MESSAGES) {
+    return null
+  }
+  const messages: ChatMessage[] = []
+  for (const m of input) {
+    if (
+      !m ||
+      typeof m !== 'object' ||
+      (m.role !== 'user' && m.role !== 'assistant') ||
+      typeof m.content !== 'string' ||
+      m.content.length === 0 ||
+      m.content.length > MAX_MESSAGE_CHARS
+    ) {
+      return null
+    }
+    messages.push({ role: m.role, content: m.content })
+  }
+  return messages
 }
 
 export async function POST(req: NextRequest) {
-  const body = await req.json()
-  const messages = body.messages as { role: 'user' | 'assistant'; content: string }[]
+  const { ok } = rateLimit(`chat:${clientIp(req)}`, RATE_LIMIT, RATE_WINDOW_MS)
+  if (!ok) {
+    return new Response('rate limit exceeded', { status: 429 })
+  }
 
-  if (!messages || messages.length === 0) {
-    return new Response('messages required', { status: 400 })
+  const body = await req.json().catch(() => null)
+  const messages = validateMessages(body?.messages)
+  if (!messages) {
+    return new Response('invalid messages', { status: 400 })
   }
 
   const systemPrompt = await buildSystemPrompt()

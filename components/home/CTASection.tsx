@@ -6,6 +6,7 @@ import { Send } from 'lucide-react'
 
 function NewsletterForm() {
   const [email, setEmail] = useState('')
+  const [website, setWebsite] = useState('') // honeypot — bots fill it, humans never see it
   const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle')
   const [message, setMessage] = useState('')
 
@@ -18,7 +19,7 @@ function NewsletterForm() {
       const res = await fetch('/api/newsletter', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email }),
+        body: JSON.stringify({ email, website }),
       })
       const data = await res.json()
       if (res.ok) {
@@ -43,6 +44,16 @@ function NewsletterForm() {
 
   return (
     <form onSubmit={submit} className="mt-6 flex flex-col sm:flex-row gap-2 max-w-md mx-auto">
+      <input
+        type="text"
+        name="website"
+        value={website}
+        onChange={(e) => setWebsite(e.target.value)}
+        tabIndex={-1}
+        autoComplete="off"
+        aria-hidden="true"
+        className="absolute -left-[9999px] h-0 w-0 opacity-0"
+      />
       <input
         type="email"
         value={email}
