@@ -23,11 +23,9 @@ export default function FeaturedVideos() {
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {featuredVideos.map((video) => (
-            <a
+            <Link
               key={video.id}
-              href={video.youtubeUrl}
-              target="_blank"
-              rel="noopener noreferrer"
+              href={`/videos/${video.youtubeId}`}
               className="group block bg-white rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition-all duration-300"
             >
               <div className="relative aspect-video overflow-hidden bg-slate-100">
@@ -35,6 +33,7 @@ export default function FeaturedVideos() {
                   src={video.thumbnailUrl}
                   alt={video.title}
                   fill
+                  unoptimized
                   className="object-cover group-hover:scale-105 transition-transform duration-500"
                 />
                 {/* Play button overlay */}
@@ -75,7 +74,7 @@ export default function FeaturedVideos() {
                   })}
                 </p>
               </div>
-            </a>
+            </Link>
           ))}
         </div>
 

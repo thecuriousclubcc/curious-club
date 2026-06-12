@@ -1,4 +1,5 @@
 import Image from 'next/image'
+import Link from 'next/link'
 import type { Video } from '@/data/videos'
 
 interface VideoCardProps {
@@ -7,10 +8,8 @@ interface VideoCardProps {
 
 export default function VideoCard({ video }: VideoCardProps) {
   return (
-    <a
-      href={video.youtubeUrl}
-      target="_blank"
-      rel="noopener noreferrer"
+    <Link
+      href={`/videos/${video.youtubeId}`}
       className="group block bg-white rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition-all duration-300 border border-slate-100"
     >
       <div className="relative aspect-video overflow-hidden bg-slate-100">
@@ -19,6 +18,7 @@ export default function VideoCard({ video }: VideoCardProps) {
           alt={video.title}
           fill
           className="object-cover group-hover:scale-105 transition-transform duration-500"
+          unoptimized
         />
         <div className="absolute inset-0 flex items-center justify-center">
           <div className="w-12 h-12 rounded-full bg-white/90 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity shadow">
@@ -46,14 +46,21 @@ export default function VideoCard({ video }: VideoCardProps) {
         <p className="mt-2 text-xs text-slate-500 leading-relaxed line-clamp-2">
           {video.description}
         </p>
-        <p className="mt-3 text-xs text-slate-400">
-          {new Date(video.publishedAt).toLocaleDateString('ja-JP', {
-            year: 'numeric',
-            month: 'long',
-            day: 'numeric',
-          })}
-        </p>
+        <div className="mt-3 flex items-center justify-between">
+          <p className="text-xs text-slate-400">
+            {new Date(video.publishedAt).toLocaleDateString('ja-JP', {
+              year: 'numeric',
+              month: 'long',
+              day: 'numeric',
+            })}
+          </p>
+          {video.viewCount && (
+            <p className="text-xs text-slate-400">
+              {Number(video.viewCount).toLocaleString('ja-JP')} 回視聴
+            </p>
+          )}
+        </div>
       </div>
-    </a>
+    </Link>
   )
 }

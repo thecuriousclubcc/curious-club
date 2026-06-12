@@ -1,4 +1,70 @@
+'use client'
+
 import Link from 'next/link'
+import { useState } from 'react'
+import { Send } from 'lucide-react'
+
+function NewsletterForm() {
+  const [email, setEmail] = useState('')
+  const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle')
+  const [message, setMessage] = useState('')
+
+  async function submit(e: React.FormEvent) {
+    e.preventDefault()
+    if (!email.trim() || status === 'loading') return
+
+    setStatus('loading')
+    try {
+      const res = await fetch('/api/newsletter', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email }),
+      })
+      const data = await res.json()
+      if (res.ok) {
+        setStatus('success')
+        setMessage(data.message ?? '登録しました')
+        setEmail('')
+      } else {
+        setStatus('error')
+        setMessage(data.error ?? 'エラーが発生しました')
+      }
+    } catch {
+      setStatus('error')
+      setMessage('通信エラーが発生しました')
+    }
+  }
+
+  if (status === 'success') {
+    return (
+      <p className="text-teal-200 text-sm mt-6">{message} メールをお待ちください。</p>
+    )
+  }
+
+  return (
+    <form onSubmit={submit} className="mt-6 flex flex-col sm:flex-row gap-2 max-w-md mx-auto">
+      <input
+        type="email"
+        value={email}
+        onChange={(e) => setEmail(e.target.value)}
+        placeholder="メールアドレスを入力"
+        required
+        className="flex-1 px-4 py-3 rounded-full text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-white bg-white/90"
+      />
+      <button
+        type="submit"
+        disabled={status === 'loading'}
+        className="flex items-center justify-center gap-2 px-6 py-3 bg-white text-teal-900 rounded-full text-sm font-semibold hover:bg-teal-50 transition-colors disabled:opacity-60"
+      >
+        <Send size={14} />
+        登録
+      </button>
+      {status === 'error' && (
+        <p className="w-full text-red-300 text-xs mt-1">{message}</p>
+      )}
+    </form>
+  )
+}
 
 export default function CTASection() {
   return (
@@ -25,6 +91,13 @@ export default function CTASection() {
           >
             チャンネルを見る
           </a>
+        </div>
+
+        {/* Newsletter */}
+        <div className="mt-16 pt-10 border-t border-teal-800">
+          <p className="text-white font-semibold text-lg">新着エピソードを見逃さない</p>
+          <p className="mt-2 text-teal-300 text-sm">新しいインタビューが公開されたらメールでお知らせします。</p>
+          <NewsletterForm />
         </div>
       </div>
     </section>

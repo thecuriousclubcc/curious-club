@@ -11,6 +11,8 @@ export interface Video {
   publishedAt: string
   featured: boolean
   tags: string[]
+  viewCount?: string
+  duration?: string
 }
 
 export const videos: Video[] = [

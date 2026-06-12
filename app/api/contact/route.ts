@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { Resend } from 'resend'
 
-const resend = new Resend(process.env.RESEND_API_KEY)
+function getResend() { return new Resend(process.env.RESEND_API_KEY) }
 
 const typeLabels: Record<string, string> = {
   appearance: '出演依頼',
@@ -52,7 +52,7 @@ export async function POST(req: NextRequest) {
 
     const typeLabel = typeLabels[type]
 
-    await resend.emails.send({
+    await getResend().emails.send({
       from: 'The Curious Club <onboarding@resend.dev>',
       to: 'thecuriousclub.cc@gmail.com',
       replyTo: email,
