@@ -62,19 +62,12 @@ function decodeXmlEntities(s: string): string {
     .replace(/&#39;/g, "'")
 }
 
-/** ISO 8601 duration (PT1H2M3S) → seconds; 0 when missing/unparseable. */
-function durationSeconds(iso?: string): number {
-  const m = iso?.match(/^PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?$/)
-  if (!m) return 0
-  return Number(m[1] ?? 0) * 3600 + Number(m[2] ?? 0) * 60 + Number(m[3] ?? 0)
-}
-
 function isShort(entry: RemoteEntry): boolean {
-  if (/#shorts/i.test(entry.title) || /#shorts/i.test(entry.description.slice(0, 200))) {
-    return true
-  }
-  const seconds = durationSeconds(entry.duration)
-  return seconds > 0 && seconds <= 180
+  // YouTube RSS has no duration and its alternate links are watch URLs, so the
+  // free RSS path relies on creator hashtag tagging.
+  return /#(?:shorts?|ショート)(?:$|[\s.,!?:;)\]}。、！？])/i.test(
+    `${entry.title}\n${entry.description}`,
+  )
 }
 
 async function getRssEntries(): Promise<RemoteEntry[]> {

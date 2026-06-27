@@ -9,7 +9,6 @@ export interface RssVideoEntry {
   publishedAt: string
   link: string
   viewCount?: string
-  duration?: string
 }
 
 export function youtubeRssUrl(channelId = DEFAULT_CHANNEL_ID): string {
@@ -59,20 +58,12 @@ export function parseRssEntries(xml: string): RssVideoEntry[] {
   })
 }
 
-export function durationSeconds(iso?: string): number {
-  const match = iso?.match(/^PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?$/)
-  if (!match) return 0
-  return Number(match[1] ?? 0) * 3600 + Number(match[2] ?? 0) * 60 + Number(match[3] ?? 0)
-}
-
-export function isShort(entry: Pick<RssVideoEntry, 'title' | 'description' | 'link' | 'duration'>) {
-  if (entry.link.includes('/shorts/')) return true
-  if (/#shorts/i.test(entry.title) || /#shorts/i.test(entry.description.slice(0, 200))) {
-    return true
-  }
-
-  const seconds = durationSeconds(entry.duration)
-  return seconds > 0 && seconds <= 180
+export function isShort(entry: Pick<RssVideoEntry, 'title' | 'description'>) {
+  // YouTube channel RSS does not include duration and uses watch URLs for Shorts,
+  // so the free RSS path relies on creator hashtag tagging.
+  return /#(?:shorts?|ショート)(?:$|[\s.,!?:;)\]}。、！？])/i.test(
+    `${entry.title}\n${entry.description}`,
+  )
 }
 
 export function findNewLongFormEntries(
@@ -112,7 +103,6 @@ export function videoFromRssEntry(
     featured: false,
     tags: [],
     viewCount: entry.viewCount,
-    duration: entry.duration,
   }
 }
 
@@ -149,12 +139,12 @@ export function renderVideoObject(video: Video): string {
 export function appendVideosToDataFile(source: string, videosToAppend: Video[]): string {
   if (videosToAppend.length === 0) return source
 
-  const marker = '\n]\n\nexport const featuredVideos'
-  const markerIndex = source.indexOf(marker)
-  if (markerIndex === -1) {
+  const marker = /\n]\s*\n+export const featuredVideos/
+  const match = marker.exec(source)
+  if (!match) {
     throw new Error('Could not find the videos array closing marker in data/videos.ts')
   }
 
   const insertion = `\n${videosToAppend.map(renderVideoObject).join('\n')}`
-  return `${source.slice(0, markerIndex)}${insertion}${source.slice(markerIndex)}`
+  return `${source.slice(0, match.index)}${insertion}${source.slice(match.index)}`
 }
