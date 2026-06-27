@@ -9,7 +9,13 @@ const config: Config = {
   theme: {
     extend: {
       fontFamily: {
-        sans: ['var(--font-noto-sans-jp)', 'Hiragino Kaku Gothic ProN', 'sans-serif'],
+        sans: [
+          'Noto Sans JP',
+          'Hiragino Kaku Gothic ProN',
+          'Yu Gothic',
+          'Meiryo',
+          'sans-serif',
+        ],
       },
       colors: {
         brand: {
