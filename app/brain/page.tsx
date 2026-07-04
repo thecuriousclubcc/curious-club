@@ -17,7 +17,7 @@ export default function BrainPage() {
           </p>
           <h1 className="text-3xl md:text-4xl font-bold text-slate-900">動画内検索</h1>
           <p className="mt-4 text-slate-600 leading-relaxed max-w-xl text-sm">
-            全エピソードの発言を横断検索。気になるテーマを入れると、
+            全エピソードの「発言そのもの」を横断検索。
             誰が・どの動画の・何分何秒に話したかが見つかり、その場面からすぐ再生できます。
           </p>
         </div>
