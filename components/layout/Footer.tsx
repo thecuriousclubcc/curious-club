@@ -26,6 +26,7 @@ const socialLinks = [
 const footerLinks = [
   { href: '/', label: 'ホーム' },
   { href: '/videos', label: '動画一覧' },
+  { href: '/brain', label: '動画内検索' },
   { href: '/about', label: 'About' },
   { href: '/contact', label: 'お問い合わせ' },
 ]
