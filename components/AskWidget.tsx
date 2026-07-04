@@ -1,12 +1,27 @@
 'use client'
 
 import { useState, useRef, useEffect } from 'react'
-import { MessageCircle, X, Send, Loader2 } from 'lucide-react'
+import { MessageCircle, X, Send, Loader2, Play } from 'lucide-react'
 import ChatMessage from '@/components/ChatMessage'
+
+interface BrainSource {
+  video_title: string
+  youtube_id: string
+  start_sec: number
+  speaker: string | null
+  quote: string
+}
 
 interface Message {
   role: 'user' | 'assistant'
   content: string
+  sources?: BrainSource[]
+}
+
+function mmss(sec: number): string {
+  const s = Math.floor(sec)
+  const m = Math.floor(s / 60)
+  return `${String(m).padStart(2, '0')}:${String(s % 60).padStart(2, '0')}`
 }
 
 export default function AskWidget() {
@@ -91,15 +106,18 @@ export default function AskWidget() {
           const payload = line.slice(6).trim()
           if (payload === '[DONE]') break
           try {
-            const { text } = JSON.parse(payload) as { text: string }
+            const parsed = JSON.parse(payload) as {
+              text?: string
+              sources?: BrainSource[]
+            }
             setMessages((prev) => {
               const updated = [...prev]
               const last = updated[updated.length - 1]
-              if (last.role === 'assistant') {
-                updated[updated.length - 1] = {
-                  ...last,
-                  content: last.content + text,
-                }
+              if (last.role !== 'assistant') return prev
+              updated[updated.length - 1] = {
+                ...last,
+                content: parsed.text ? last.content + parsed.text : last.content,
+                sources: parsed.sources ?? last.sources,
               }
               return updated
             })
@@ -158,7 +176,27 @@ export default function AskWidget() {
           {/* Messages */}
           <div className="flex-1 overflow-y-auto px-4 py-4 space-y-3">
             {messages.map((msg, i) => (
-              <ChatMessage key={i} role={msg.role} content={msg.content} />
+              <div key={i}>
+                <ChatMessage role={msg.role} content={msg.content} />
+                {msg.role === 'assistant' && msg.content && !!msg.sources?.length && (
+                  <div className="mt-1.5 flex max-w-[85%] flex-wrap gap-1.5">
+                    {msg.sources.slice(0, 4).map((s, j) => (
+                      <a
+                        key={j}
+                        href={`https://www.youtube.com/watch?v=${s.youtube_id}&t=${Math.floor(s.start_sec)}s`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        title={`${s.video_title} — ${s.quote.slice(0, 60)}`}
+                        className="inline-flex max-w-full items-center gap-1 rounded-full border border-slate-200 bg-white px-2.5 py-1 text-[11px] text-slate-600 transition-colors hover:border-teal-600 hover:text-teal-700"
+                      >
+                        <Play size={10} className="shrink-0 text-teal-700" fill="currentColor" />
+                        <span className="tabular-nums font-medium">{mmss(s.start_sec)}</span>
+                        <span className="truncate">{s.video_title.replace(/【.*】/, '').slice(0, 18)}</span>
+                      </a>
+                    ))}
+                  </div>
+                )}
+              </div>
             ))}
             {streaming && messages[messages.length - 1]?.content === '' && (
               <div className="flex justify-start">
