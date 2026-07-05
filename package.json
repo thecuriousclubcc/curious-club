@@ -7,9 +7,11 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint .",
-    "test": "tsx --test tests/**/*.test.ts",
+    "test": "tsx --test tests/*.test.ts",
     "episode:enrich": "tsx scripts/episode-enricher.ts",
-    "episode:verify": "tsx scripts/verify-episode-summaries.ts"
+    "episode:verify": "tsx scripts/verify-episode-summaries.ts",
+    "x:syndicate": "tsx scripts/x-syndicate.ts",
+    "x:post": "tsx scripts/x-post.ts"
   },
   "dependencies": {
     "@marsidev/react-turnstile": "^1.4.2",
@@ -20,7 +22,8 @@
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "resend": "^6.9.3",
-    "tailwind-merge": "^2.5.4"
+    "tailwind-merge": "^2.5.4",
+    "twitter-api-v2": "^1.29.0"
   },
   "devDependencies": {
     "@types/node": "^20",
