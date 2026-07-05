@@ -18,4 +18,6 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run lint
-      - run: npm test
+      # not `npm test`: its `tests/**/*.test.ts` glob relies on zsh globstar
+      # expansion and comes through literally under the runner's bash
+      - run: npx tsx --test tests/*.test.ts
