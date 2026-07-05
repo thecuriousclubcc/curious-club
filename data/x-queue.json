@@ -1,6 +1,730 @@
 {
-  "updated": "2026-06-27T10:03:34.900Z",
+  "updated": "2026-07-05T19:01:20.542Z",
   "drafts": [
+    {
+      "youtubeId": "91wHINWway0",
+      "videoTitle": "医学生へのアドバイス！無駄と思えることに全力で打ち込む重要性 #shorts #インタビュー #医学生",
+      "youtubeUrl": "https://www.youtube.com/watch?v=91wHINWway0",
+      "isShort": true,
+      "status": "pending_review",
+      "generatedAt": "2026-07-05T19:01:20.542Z",
+      "launchPost": "無駄と言われても全力で挑戦！医学生へのアドバイスに密着（＠ゲスト）",
+      "linkReply": "こちらのYouTube動画でご覧いただけます https://www.youtube.com/watch?v=91wHINWway0",
+      "thread": [
+        "無駄と言われても全力で挑戦！",
+        "医学生へのアドバイスに密着（＠ゲスト）"
+      ],
+      "quoteCard": {
+        "quote": "無駄と言われても全力で挑戦",
+        "attribution": "理事長"
+      },
+      "guestResharePost": "私が医学生へのアドバイスを伝えた動画（＠ゲスト）",
+      "hashtags": [
+        "#医学生",
+        "#インタビュー",
+        "#shorts"
+      ],
+      "mediaPath": "media/x/91wHINWway0.mp4",
+      "reviewerNotes": [
+        "ゲストの@ハンドルを「（＠ゲスト）」と置き換える",
+        "縦型Shortのmp4を添付",
+        "事実関係・敬称・所属をゲスト本人基準で確認"
+      ]
+    },
+    {
+      "youtubeId": "mO537LgJAnA",
+      "videoTitle": "医療人の利益とは？国民健康保険はすごい #shorts #インタビュー #医療 #国民健康保険 #鹿児島 #医学生 #医師",
+      "youtubeUrl": "https://www.youtube.com/watch?v=mO537LgJAnA",
+      "isShort": true,
+      "status": "pending_review",
+      "generatedAt": "2026-07-05T19:01:15.968Z",
+      "launchPost": "医療人の利益とは？国民健康保険のすごいところを院長に聞きました！（＠ゲスト）",
+      "linkReply": "詳しくはこちら https://www.youtube.com/watch?v=mO537LgJAnA ",
+      "thread": [
+        "院長から学んだ、医療人の使命とは何か？",
+        "国民健康保険の強みを感じた瞬間"
+      ],
+      "quoteCard": {
+        "quote": "医療人が国民健康保険の強みを知っておくべきである",
+        "attribution": "院長"
+      },
+      "guestResharePost": "医療人の使命を考えさせられたお話（＠ゲスト）",
+      "hashtags": [
+        "#医療",
+        "#国民健康保険",
+        "#鹿児島"
+      ],
+      "mediaPath": "media/x/mO537LgJAnA.mp4",
+      "reviewerNotes": [
+        "ゲストの@ハンドルを「（＠ゲスト）」と置き換える",
+        "縦型Shortのmp4を添付",
+        "事実関係・敬称・所属をゲスト本人基準で確認"
+      ]
+    },
+    {
+      "youtubeId": "XKW-Y7Foq4I",
+      "videoTitle": "医師国家試験を受けるにあたって...　#shorts #医師国家試験 #国試対策 #医師 #地域医療 #医学生",
+      "youtubeUrl": "https://www.youtube.com/watch?v=XKW-Y7Foq4I",
+      "isShort": true,
+      "status": "pending_review",
+      "generatedAt": "2026-07-05T19:01:11.760Z",
+      "launchPost": "医師国家試験を受けるにあたって...！（＠ゲスト）が語る、国試対策の秘訣とは？",
+      "linkReply": "詳しくはこちら https://www.youtube.com/watch?v=XKW-Y7Foq4I で>",
+      "thread": [
+        "「医師国家試験の苦労話」",
+        "「地域医療への思い」"
+      ],
+      "quoteCard": {
+        "quote": "医師国家試験は、ただ受かることだけではなく、未来への第一歩です。",
+        "attribution": "（＠ゲスト）"
+      },
+      "guestResharePost": "私の医師国家試験受験ストーリー！（＠ゲスト）",
+      "hashtags": [
+        "#医師国家試験",
+        "#医学生",
+        "#地域医療"
+      ],
+      "mediaPath": "media/x/XKW-Y7Foq4I.mp4",
+      "reviewerNotes": [
+        "ゲストの@ハンドルを「（＠ゲスト）」と置き換える",
+        "縦型Shortのmp4を添付",
+        "事実関係・敬称・所属をゲスト本人基準で確認"
+      ]
+    },
+    {
+      "youtubeId": "5xPP-ocswyY",
+      "videoTitle": "医師を続ける理由 #shorts #インタビュー #医療 #鹿児島 #医師 #医学生",
+      "youtubeUrl": "https://www.youtube.com/watch?v=5xPP-ocswyY",
+      "isShort": true,
+      "status": "pending_review",
+      "generatedAt": "2026-07-05T19:01:08.588Z",
+      "launchPost": "医師を続ける理由とは？（＠ゲスト）が語る、医師の使命と情熱！",
+      "linkReply": "フルバージョンはこちら https://www.youtube.com/watch?v=5xPP-ocswyY でご覧ください！",
+      "thread": [
+        "「医師の使命とは何か」について、（＠ゲスト）氏と熱く議論しました。",
+        "「医療の未来」についての（＠ゲスト）氏の言葉は、印象的でした。"
+      ],
+      "quoteCard": {
+        "quote": "医師は、ただ治療をするだけでなく、命を守る使命を負っています。",
+        "attribution": "理事長"
+      },
+      "guestResharePost": "医師を続ける理由を（＠ゲスト）が語ってくれたのは、本当に感動的でした。",
+      "hashtags": [
+        "#医療",
+        "#医師",
+        "#鹿児島"
+      ],
+      "mediaPath": "media/x/5xPP-ocswyY.mp4",
+      "reviewerNotes": [
+        "ゲストの@ハンドルを「（＠ゲスト）」と置き換える",
+        "縦型Shortのmp4を添付",
+        "事実関係・敬称・所属をゲスト本人基準で確認"
+      ]
+    },
+    {
+      "youtubeId": "xAzEIGGPE3M",
+      "videoTitle": "学生に伝えたい学びに対する姿勢 #shorts #インタビュー #医学生 #研修医 #医師",
+      "youtubeUrl": "https://www.youtube.com/watch?v=xAzEIGGPE3M",
+      "isShort": true,
+      "status": "pending_review",
+      "generatedAt": "2026-07-05T19:01:04.978Z",
+      "launchPost": "学びの第一歩は何ですか？（＠ゲスト）さんから学べる学びに対する姿勢とは？",
+      "linkReply": "詳細はこちらの動画で！https://www.youtube.com/watch?v=xAzEIGGPE3M",
+      "thread": [
+        "（＠ゲスト）さんから学んだ、学びの第一歩とは？",
+        "（＠ゲスト）さんの言葉に共感できましたか？"
+      ],
+      "quoteCard": {
+        "quote": "学びは終わらない",
+        "attribution": "（＠ゲスト）さん"
+      },
+      "guestResharePost": "学びの第一歩は何ですか？私（＠ゲスト）が伝えたい学びに対する姿勢をチェックしてください！",
+      "hashtags": [
+        "#医学生",
+        "#研修医",
+        "#医師"
+      ],
+      "mediaPath": "media/x/xAzEIGGPE3M.mp4",
+      "reviewerNotes": [
+        "ゲストの@ハンドルを「（＠ゲスト）」と置き換える",
+        "縦型Shortのmp4を添付",
+        "事実関係・敬称・所属をゲスト本人基準で確認"
+      ]
+    },
+    {
+      "youtubeId": "LSVHaq1dYqI",
+      "videoTitle": "父の背中で学んだ医療 #shorts #インタビュー #地域医療 #医師 #医学生 #地域医療 #訪問診療",
+      "youtubeUrl": "https://www.youtube.com/watch?v=LSVHaq1dYqI",
+      "isShort": true,
+      "status": "pending_review",
+      "generatedAt": "2026-07-05T19:01:00.391Z",
+      "launchPost": "「父の背中で学んだ医療」が私に残したものは？（＠ゲスト）",
+      "linkReply": "動画全編はこちら https://www.youtube.com/watch?v=LSVHaq1dYqI",
+      "thread": [
+        "地域医療の未来を語る",
+        "訪問診療の魅力に迫る"
+      ],
+      "quoteCard": {
+        "quote": "医療の本質は",
+        "attribution": "（＠ゲスト）"
+      },
+      "guestResharePost": "私の医療人生を形作った経験を話しました。（＠ゲスト）",
+      "hashtags": [
+        "#地域医療",
+        "#医師",
+        "#医学生"
+      ],
+      "mediaPath": "media/x/LSVHaq1dYqI.mp4",
+      "reviewerNotes": [
+        "ゲストの@ハンドルを「（＠ゲスト）」と置き換える",
+        "縦型Shortのmp4を添付",
+        "事実関係・敬称・所属をゲスト本人基準で確認"
+      ]
+    },
+    {
+      "youtubeId": "wnL1uKOxylM",
+      "videoTitle": "感動したの医師の言葉 #shorts #医療 #医学生 #インタビュー #鹿児島",
+      "youtubeUrl": "https://www.youtube.com/watch?v=wnL1uKOxylM",
+      "isShort": true,
+      "status": "pending_review",
+      "generatedAt": "2026-07-05T19:00:56.322Z",
+      "launchPost": "鹿児島で活躍する医師の言葉に心が熱くなった！（＠ゲスト）",
+      "linkReply": "詳しくはこちら https://www.youtube.com/watch?v=wnL1uKOxylM ",
+      "thread": [
+        "医師の言葉から学んだこと",
+        "医療の未来について話しました"
+      ],
+      "quoteCard": {
+        "quote": "医療は人と人とのつながり",
+        "attribution": "理事長"
+      },
+      "guestResharePost": "感動した医師の言葉を聞きました（＠ゲスト）",
+      "hashtags": [
+        "#医療",
+        "#医学生",
+        "#鹿児島"
+      ],
+      "mediaPath": "media/x/wnL1uKOxylM.mp4",
+      "reviewerNotes": [
+        "ゲストの@ハンドルを「（＠ゲスト）」と置き換える",
+        "縦型Shortのmp4を添付",
+        "事実関係・敬称・所属をゲスト本人基準で確認"
+      ]
+    },
+    {
+      "youtubeId": "sAj7Dgk-8-Q",
+      "videoTitle": "志布志の医療圏　新しい道路で変わる？　#shorts #志布志 #都城市 #鹿児島 #医療 #地域医療 #インタビュー #医師",
+      "youtubeUrl": "https://www.youtube.com/watch?v=sAj7Dgk-8-Q",
+      "isShort": true,
+      "status": "pending_review",
+      "generatedAt": "2026-07-05T19:00:52.246Z",
+      "launchPost": "志布志の医療圏が新しい道路で大きく変わる？（＠ゲスト）が語る地域医療の未来",
+      "linkReply": "こちらの動画で（＠ゲスト）さんとの対談をぜひご覧ください！ https://www.youtube.com/watch?v=sAj7Dgk-8-Q",
+      "thread": [
+        "志布志の医療圏を守るために、（＠ゲスト）さんは何を提言しますか？",
+        "新しい道路ができたことで、地域医療はどう変わるのでしょうか？"
+      ],
+      "quoteCard": {
+        "quote": "医療は地域に根ざしたものであるべきです",
+        "attribution": "（＠ゲスト）"
+      },
+      "guestResharePost": "私（＠ゲスト）とキュリクラの対談動画を公開しました！志布志の医療圏について話しました",
+      "hashtags": [
+        "#地域医療",
+        "#医療",
+        "#鹿児島"
+      ],
+      "mediaPath": "media/x/sAj7Dgk-8-Q.mp4",
+      "reviewerNotes": [
+        "ゲストの@ハンドルを「（＠ゲスト）」と置き換える",
+        "縦型Shortのmp4を添付",
+        "事実関係・敬称・所属をゲスト本人基準で確認"
+      ]
+    },
+    {
+      "youtubeId": "V1jOlBrDZeU",
+      "videoTitle": "これから志布志と都城はどうなっていくのか #shorts #鹿児島 #志布志 #都城市 #インタビュー #トラック #医療 #地域医療",
+      "youtubeUrl": "https://www.youtube.com/watch?v=V1jOlBrDZeU",
+      "isShort": true,
+      "status": "pending_review",
+      "generatedAt": "2026-07-05T19:00:47.893Z",
+      "launchPost": "志布志と都城の未来を切り開く人たち。彼らの熱い想いを聞いてみた（＠ゲスト）",
+      "linkReply": "動画の続きはこちら https://www.youtube.com/watch?v=V1jOlBrDZeU",
+      "thread": [
+        "志布志と都城はこれからどう変わっていくのか？",
+        "地域医療の未来を担う人たちが語る、志布志と都城の可能性"
+      ],
+      "quoteCard": {
+        "quote": "地域医療は、コミュニティの一部である。",
+        "attribution": "理事長"
+      },
+      "guestResharePost": "志布志と都城の未来を切り開く人たち。彼らの熱い想いを聞いてみた（＠ゲスト）",
+      "hashtags": [
+        "#鹿児島",
+        "#地域医療",
+        "#医療"
+      ],
+      "mediaPath": "media/x/V1jOlBrDZeU.mp4",
+      "reviewerNotes": [
+        "ゲストの@ハンドルを「（＠ゲスト）」と置き換える",
+        "縦型Shortのmp4を添付",
+        "事実関係・敬称・所属をゲスト本人基準で確認"
+      ]
+    },
+    {
+      "youtubeId": "MPwrsnCyrio",
+      "videoTitle": "医師の魅力とは？どこが面白い？ #shorts #インタビュー #医療 #鹿児島 #医師 #魅力",
+      "youtubeUrl": "https://www.youtube.com/watch?v=MPwrsnCyrio",
+      "isShort": true,
+      "status": "pending_review",
+      "generatedAt": "2026-07-05T19:00:46.852Z",
+      "launchPost": "医師の魅力とは？どこが面白い？（＠ゲスト）",
+      "linkReply": "こちらの動画はこちらからご覧いただけます https://www.youtube.com/watch?v=MPwrsnCyrio",
+      "thread": [
+        "医師の魅力がここに！",
+        "面白いと感じた瞬間"
+      ],
+      "quoteCard": {
+        "quote": "医師の魅力はどこにあるのか？",
+        "attribution": "理事長"
+      },
+      "guestResharePost": "私が医師の魅力について話した動画（＠ゲスト）",
+      "hashtags": [
+        "#医療",
+        "#鹿児島",
+        "#医師"
+      ],
+      "mediaPath": "media/x/MPwrsnCyrio.mp4",
+      "reviewerNotes": [
+        "ゲストの@ハンドルを「（＠ゲスト）」と置き換える",
+        "縦型Shortのmp4を添付",
+        "事実関係・敬称・所属をゲスト本人基準で確認"
+      ]
+    },
+    {
+      "youtubeId": "SmV-aBCXXlQ",
+      "videoTitle": "地方で開業　#shorts #地域医療 #インタビュー #鹿児島 #志布志 #医学生 #医学部",
+      "youtubeUrl": "https://www.youtube.com/watch?v=SmV-aBCXXlQ",
+      "isShort": true,
+      "status": "pending_review",
+      "generatedAt": "2026-07-05T19:00:46.056Z",
+      "launchPost": "志布志で開業医になるという夢を叶えた（＠ゲスト）さん！地方で医療を提供することの魅力とは？",
+      "linkReply": "こちらのストーリーをYouTubeでもチェックできます！https://www.youtube.com/watch?v=SmV-aBCXXlQ",
+      "thread": [
+        "（＠ゲスト）さんの言葉に共感しました：「地域医療では、患者さんとの信頼関係が大切」",
+        "地方で開業することの難しさや楽しさ、（＠ゲスト）さんの経験から学べることとは…"
+      ],
+      "quoteCard": {
+        "quote": "患者さんとの信頼関係が大切",
+        "attribution": "（＠ゲスト）さん"
+      },
+      "guestResharePost": "私のインタビュー動画がThe Curious Clubに掲載されました！（＠ゲスト）「地方で開業することの魅力」",
+      "hashtags": [
+        "#地域医療",
+        "#医学生",
+        "#鹿児島"
+      ],
+      "mediaPath": "media/x/SmV-aBCXXlQ.mp4",
+      "reviewerNotes": [
+        "ゲストの@ハンドルを「（＠ゲスト）」と置き換える",
+        "縦型Shortのmp4を添付",
+        "事実関係・敬称・所属をゲスト本人基準で確認"
+      ]
+    },
+    {
+      "youtubeId": "BFTf2b2q36s",
+      "videoTitle": "若者へのメッセージ　#shorts #インタビュー #鹿児島 #地域医療 #志布志 #メッセージ",
+      "youtubeUrl": "https://www.youtube.com/watch?v=BFTf2b2q36s",
+      "isShort": true,
+      "status": "pending_review",
+      "generatedAt": "2026-07-05T19:00:44.601Z",
+      "launchPost": "鹿児島の医療の未来を担う若者たちへ！（＠ゲスト）-sanのメッセージとは？",
+      "linkReply": "こちらの動画で（＠ゲスト）さんとのトークをチェック！https://www.youtube.com/watch?v=BFTf2b2q36s",
+      "thread": [
+        "（＠ゲスト）さんからは、地域医療の将来性についてどんな話を聞けましたか？",
+        "志布志で活躍する（＠ゲスト）さんの熱い想いを伝えるメッセージは必見です！"
+      ],
+      "quoteCard": {
+        "quote": "地域の皆さんと一緒に医療を創り上げていきたい",
+        "attribution": "(＠ゲスト）さん"
+      },
+      "guestResharePost": "自分に伝えたい、若者へのメッセージを（＠ゲスト）さんから聞きました。",
+      "hashtags": [
+        "#地域医療",
+        "#志布志",
+        "#鹿児島"
+      ],
+      "mediaPath": "media/x/BFTf2b2q36s.mp4",
+      "reviewerNotes": [
+        "ゲストの@ハンドルを「（＠ゲスト）」と置き換える",
+        "縦型Shortのmp4を添付",
+        "事実関係・敬称・所属をゲスト本人基準で確認"
+      ]
+    },
+    {
+      "youtubeId": "S2aJPSoQKR0",
+      "videoTitle": "人生のテーマ「医師を全うする」とは #shorts #インタビュー #医療 #鹿児島 #医師 #人生",
+      "youtubeUrl": "https://www.youtube.com/watch?v=S2aJPSoQKR0",
+      "isShort": true,
+      "status": "pending_review",
+      "generatedAt": "2026-07-05T19:00:39.260Z",
+      "launchPost": "「医師を全うする」ってどういう意味？（＠ゲスト）が語る人生のテーマとは…",
+      "linkReply": "動画はこちら https://www.youtube.com/watch?v=S2aJPSoQKR0 ",
+      "thread": [
+        "「医師を全うする」という言葉が印象的でした。自分もこの言葉を人生のテーマにしていきたいと思いました。",
+        "（＠ゲスト）の言葉に共感できました。医師としての使命感を感じ取りました。"
+      ],
+      "quoteCard": {
+        "quote": "医師を全うすること",
+        "attribution": "（＠ゲスト）"
+      },
+      "guestResharePost": "私的人生のテーマ「医師を全うする」について話しました。（＠ゲスト）",
+      "hashtags": [
+        "#医療",
+        "#医師",
+        "#人生"
+      ],
+      "mediaPath": "media/x/S2aJPSoQKR0.mp4",
+      "reviewerNotes": [
+        "ゲストの@ハンドルを「（＠ゲスト）」と置き換える",
+        "縦型Shortのmp4を添付",
+        "事実関係・敬称・所属をゲスト本人基準で確認"
+      ]
+    },
+    {
+      "youtubeId": "fdQtMdO7JRA",
+      "videoTitle": "#13 手塚善久院長　手塚クリニック　【曽於医師会会長が語る志布志の地域医療】",
+      "youtubeUrl": "https://www.youtube.com/watch?v=fdQtMdO7JRA",
+      "isShort": false,
+      "status": "pending_review",
+      "generatedAt": "2026-07-05T19:00:38.218Z",
+      "launchPost": "「志布志の医療が抱える問題は、日本全国の地方が共通して直面している問題でもある」と語る手塚善久院長。地域医療の現状と未来について、開業医の視点から語っていただきました。（＠ゲスト）",
+      "linkReply": "続きはこちら https://www.youtube.com/watch?v=fdQtMdO7JRA",
+      "thread": [
+        "「医師会は地域の医療を守るためのセーフティネット。それを維持することが開業医の責務だと思っている」",
+        "「若い医師が地方に来てくれるためには、『ここで働くことへの誇り』を作り出す必要がある」"
+      ],
+      "quoteCard": {
+        "quote": "医師会は地域の医療を守るためのセーフティネット",
+        "attribution": "手塚善久院長"
+      },
+      "guestResharePost": "私と一緒に、志布志の医療の未来について話しました。（＠ゲスト）",
+      "hashtags": [
+        "#地域医療",
+        "#医師会",
+        "#鹿児島"
+      ],
+      "mediaPath": "media/x/fdQtMdO7JRA.mp4",
+      "reviewerNotes": [
+        "ゲストの@ハンドルを「（＠ゲスト）」と置き換える",
+        "本編のハイライトmp4（1〜2分）を添付",
+        "事実関係・敬称・所属をゲスト本人基準で確認"
+      ]
+    },
+    {
+      "youtubeId": "JPUYzEjEq8M",
+      "videoTitle": "#12 黒木康文院長　黒木医院　【地域医の哲学】",
+      "youtubeUrl": "https://www.youtube.com/watch?v=JPUYzEjEq8M",
+      "isShort": false,
+      "status": "pending_review",
+      "generatedAt": "2026-07-05T19:00:37.254Z",
+      "launchPost": "本当に必要な医療だけを届けるという診療哲学とは？黒木医院の院長、黒木康文院長に迫りました！（＠ゲスト）",
+      "linkReply": "こちらの動画で黒木院長の話をチェック！https://www.youtube.com/watch?v=JPUYzEjEq8M",
+      "thread": [
+        "黒木院長の「必要な医療だけを、必要な分だけ」という言葉が印象的でした。",
+        "救急の現場で鍛えられた判断力が、今の地域医療でも生きているという話が納得できました。"
+      ],
+      "quoteCard": {
+        "quote": "必要な医療だけを、必要な分だけ。それが患者さんへの本当の誠実さだと思っている",
+        "attribution": "黒木康文院長"
+      },
+      "guestResharePost": "私の考えをシェアした動画が公開されました！（＠ゲスト）",
+      "hashtags": [
+        "#地域医療",
+        "#医療哲学",
+        "#鹿児島"
+      ],
+      "mediaPath": "media/x/JPUYzEjEq8M.mp4",
+      "reviewerNotes": [
+        "ゲストの@ハンドルを「（＠ゲスト）」と置き換える",
+        "本編のハイライトmp4（1〜2分）を添付",
+        "事実関係・敬称・所属をゲスト本人基準で確認"
+      ]
+    },
+    {
+      "youtubeId": "muF6JOq3SEU",
+      "videoTitle": "#11 小川晋平 代表取締役社長　AMI株式会社　【超聴診器】",
+      "youtubeUrl": "https://www.youtube.com/watch?v=muF6JOq3SEU",
+      "isShort": false,
+      "status": "pending_review",
+      "generatedAt": "2026-07-05T18:59:55.447Z",
+      "launchPost": "医療の最前線でテクノロジーを活かす、AMI株式会社の小川晋平社長（＠ゲスト）に聞きました。AIは医師の代替ではなく、医師の能力を何倍にも拡張するツールだと思っているという考えとは？",
+      "linkReply": "詳しくはこちらの動画で！https://www.youtube.com/watch?v=muF6JOq3SEU",
+      "thread": [
+        "AIを活用した超聴診器の開発とは何を目指しているのか",
+        "医療×テクノロジーの最前線で起業家としての思いとは",
+        "日本の医療を変えるビジョンを語ってくれた、小川社長の言葉に感銘を受けた瞬間"
+      ],
+      "quoteCard": {
+        "quote": "AIは医師の代替ではなく、医師の能力を何倍にも拡張するツールだと思っている",
+        "attribution": "小川晋平社長"
+      },
+      "guestResharePost": "医療の最前線でテクノロジーを活かす、AMI株式会社の小川晋平社長（＠ゲスト）に聞きました。AIは医師の代替ではなく、医師の能力を何倍にも拡張するツールだと思っているという考えとは？",
+      "hashtags": [
+        "#医療AI",
+        "#ヘルステック",
+        "#スタートアップ"
+      ],
+      "mediaPath": "media/x/muF6JOq3SEU.mp4",
+      "reviewerNotes": [
+        "ゲストの@ハンドルを「（＠ゲスト）」と置き換える",
+        "本編のハイライトmp4（1〜2分）を添付",
+        "事実関係・敬称・所属をゲスト本人基準で確認"
+      ]
+    },
+    {
+      "youtubeId": "MyonD6FZHoc",
+      "videoTitle": "#10 山下積徳院長　つみのり内科クリニック　【りんご教室】",
+      "youtubeUrl": "https://www.youtube.com/watch?v=MyonD6FZHoc",
+      "isShort": false,
+      "status": "pending_review",
+      "generatedAt": "2026-07-05T18:59:50.000Z",
+      "launchPost": "「治療するだけが医師の仕事ではない」 つみのり内科クリニック院長・山下積徳先生。患者さんを「教室」で守る、新しい医療の形とは？（＠ゲスト）",
+      "linkReply": "動画はこちら https://www.youtube.com/watch?v=MyonD6FZHoc",
+      "thread": [
+        "「りんご教室」は診察室の外で患者さんと向き合う、私なりの医療の形",
+        "患者さんの名前と顔を覚えて、その人の人生を一緒に考える医師でありたい"
+      ],
+      "quoteCard": {
+        "quote": "治療するだけが医師の仕事ではない。患者さんが自分で健康を守れるように導くことが本当のゴール",
+        "attribution": "山下積徳院長"
+      },
+      "guestResharePost": "私の考えを伝えることができて嬉しいです！「治療するだけが医師の仕事ではない」 つみのり内科クリニック院長・山下積徳先生。患者さんを「教室」で守る、新しい医療の形とは？（＠ゲスト）",
+      "hashtags": [
+        "#医療",
+        "#予防医療",
+        "#地域医療"
+      ],
+      "mediaPath": "media/x/MyonD6FZHoc.mp4",
+      "reviewerNotes": [
+        "ゲストの@ハンドルを「（＠ゲスト）」と置き換える",
+        "本編のハイライトmp4（1〜2分）を添付",
+        "事実関係・敬称・所属をゲスト本人基準で確認"
+      ]
+    },
+    {
+      "youtubeId": "QUFGS8W_U1Q",
+      "videoTitle": "#9 みやじ拓馬　自由民主党衆議院議員　【外務副大臣】",
+      "youtubeUrl": "https://www.youtube.com/watch?v=QUFGS8W_U1Q",
+      "isShort": false,
+      "status": "pending_review",
+      "generatedAt": "2026-07-05T18:59:42.609Z",
+      "launchPost": "政治家として医療政策に携わることは、多くの患者さんの命に影響する仕事。自由民主党衆議院議員のみやじ拓馬氏が語る、外務副大臣の現場と医師免許の活かし方。（＠ゲスト）",
+      "linkReply": "詳しくはこちらの動画で！https://www.youtube.com/watch?v=QUFGS8W_U1Q",
+      "thread": [
+        "みやじ拓馬氏が語る、政治家としての医療政策への取り組み",
+        "外交の現場で感じる信頼関係の重要性",
+        "医師免許を持つ政治家としての強みとは"
+      ],
+      "quoteCard": {
+        "quote": "政治家として医療政策に携わることは、多くの患者さんの命に影響する仕事",
+        "attribution": "みやじ拓馬氏"
+      },
+      "guestResharePost": "私の思いを語りました。（＠ゲスト）",
+      "hashtags": [
+        "#自由民主党",
+        "#医療政策",
+        "#政治家"
+      ],
+      "mediaPath": "media/x/QUFGS8W_U1Q.mp4",
+      "reviewerNotes": [
+        "ゲストの@ハンドルを「（＠ゲスト）」と置き換える",
+        "本編のハイライトmp4（1〜2分）を添付",
+        "事実関係・敬称・所属をゲスト本人基準で確認"
+      ]
+    },
+    {
+      "youtubeId": "ju5qyS-xkwI",
+      "videoTitle": "#8 北薗巌院長　キタゾノクリニック　【夜間休日診療所と外科の二刀流】",
+      "youtubeUrl": "https://www.youtube.com/watch?v=ju5qyS-xkwI",
+      "isShort": false,
+      "status": "pending_review",
+      "generatedAt": "2026-07-05T18:59:28.888Z",
+      "launchPost": "夜間休日診療と外科、二刀流で地域医療に貢献するキタゾノクリニック北薗巌院長。どのようにして二つの役割を両立させているのか？（＠ゲスト）",
+      "linkReply": "こちらの動画で北薗院長の話をチェック！https://www.youtube.com/watch?v=ju5qyS-xkwI",
+      "thread": [
+        "北薗院長の二刀流は、体力的には大変ですが、自分を成長させるきっかけにもなりました。",
+        "地域で働く医師として、患者さんの夜中の頼れる存在でありたいという想いから、今の働き方を続けています。"
+      ],
+      "quoteCard": {
+        "quote": "地域医療は華やかではないが、患者さんの顔が見える医療に一番やりがいを感じる",
+        "attribution": "北薗巌院長"
+      },
+      "guestResharePost": "自身の経験から、地域医療の重要性と二刀流の働き方について話しました。（＠ゲスト）",
+      "hashtags": [
+        "#地域医療",
+        "#開業医",
+        "#医師の働き方"
+      ],
+      "mediaPath": "media/x/ju5qyS-xkwI.mp4",
+      "reviewerNotes": [
+        "ゲストの@ハンドルを「（＠ゲスト）」と置き換える",
+        "本編のハイライトmp4（1〜2分）を添付",
+        "事実関係・敬称・所属をゲスト本人基準で確認"
+      ]
+    },
+    {
+      "youtubeId": "3ckOYhsil-c",
+      "videoTitle": "#7 福島大輔理事長　NPO法人桜島ミュージアム　【桜島博士】",
+      "youtubeUrl": "https://www.youtube.com/watch?v=3ckOYhsil-c",
+      "isShort": false,
+      "status": "pending_review",
+      "generatedAt": "2026-07-05T18:59:27.492Z",
+      "launchPost": "桜島のことを誰よりも知り尽くしたい！「桜島博士」こと福島大輔理事長が、NPO法人桜島ミュージアムの活動と桜島への情熱について語ります！（＠ゲスト）",
+      "linkReply": "こちらの動画で福島理事長のインタビューをご覧いただけます！https://www.youtube.com/watch?v=3ckOYhsil-c",
+      "thread": [
+        "自然は最高の教科書。現場に立つことで人は変わる",
+        "NPOだからこそ、お金にならないけれど大切なことに集中できる"
+      ],
+      "quoteCard": {
+        "quote": "自然は最高の教科書。現場に立つことで人は変わる",
+        "attribution": "福島大輔理事長"
+      },
+      "guestResharePost": "私たちの活動について語りました！（＠ゲスト）#桜島 #NPO #自然教育",
+      "hashtags": [
+        "#桜島",
+        "#NPO",
+        "#自然教育"
+      ],
+      "mediaPath": "media/x/3ckOYhsil-c.mp4",
+      "reviewerNotes": [
+        "ゲストの@ハンドルを「（＠ゲスト）」と置き換える",
+        "本編のハイライトmp4（1〜2分）を添付",
+        "事実関係・敬称・所属をゲスト本人基準で確認"
+      ]
+    },
+    {
+      "youtubeId": "fvIacGMrOA4",
+      "videoTitle": "#6 川尻強人会長　かごしまリアカー屋台組合　【鹿児島の街に屋台を】",
+      "youtubeUrl": "https://www.youtube.com/watch?v=fvIacGMrOA4",
+      "isShort": false,
+      "status": "pending_review",
+      "generatedAt": "2026-07-05T18:59:26.431Z",
+      "launchPost": "鹿児島の街に屋台文化を根付かせようとするかごしまリアカー屋台組合の川尻強人会長（＠ゲスト）。地域を盛り上げる情熱と屋台への思いを語ります。",
+      "linkReply": "こちらの動画で会長の話をチェックしてください！https://www.youtube.com/watch?v=fvIacGMrOA4",
+      "thread": [
+        "「屋台は単なる食事の場ではなく、人と人がつながる場所だと思っている」という会長の言葉が印象的でした。",
+        "地域を変えようとするとき、行政を待つより自分たちで動くほうが何倍も早いという会長の考え方は、自分の街で何かしたいという気持ちを刺激します。"
+      ],
+      "quoteCard": {
+        "quote": "屋台は単なる食事の場ではなく、人と人がつながる場所だと思っている",
+        "attribution": "川尻強人会長"
+      },
+      "guestResharePost": "私のインタビュー動画が公開されました！（＠ゲスト）鹿児島の街に屋台文化を根付かせようとする私の思いをチェックしてください。",
+      "hashtags": [
+        "#かごしまリアカー屋台組合",
+        "#鹿児島",
+        "#地域活性化"
+      ],
+      "mediaPath": "media/x/fvIacGMrOA4.mp4",
+      "reviewerNotes": [
+        "ゲストの@ハンドルを「（＠ゲスト）」と置き換える",
+        "本編のハイライトmp4（1〜2分）を添付",
+        "事実関係・敬称・所属をゲスト本人基準で確認"
+      ]
+    },
+    {
+      "youtubeId": "xTfnvRmwavE",
+      "videoTitle": "#5 矢島正一代表取締役社長　株式会社AmaterZ　【元SONY社員が日本の農業に挑む】",
+      "youtubeUrl": "https://www.youtube.com/watch?v=xTfnvRmwavE",
+      "isShort": false,
+      "status": "pending_review",
+      "generatedAt": "2026-07-05T18:59:25.216Z",
+      "launchPost": "元SONY社員から農業ベンチャーへ！テクノロジーで日本農業を変える矢島正一氏の挑戦とは？（＠ゲスト）",
+      "linkReply": "このインタビューの詳細はこちら https://www.youtube.com/watch?v=xTfnvRmwavE にて配信中！",
+      "thread": [
+        "「SONYで学んだ技術と思考法が、農業に新しい視点をもたらした」",
+        "「日本の農業は課題だらけだからこそ、解決策を持ち込む余地が無限にある」",
+        "「起業は怖かったが、やらずに後悔するほうがもっと怖かった」"
+      ],
+      "quoteCard": {
+        "quote": "日本の農業は課題だらけだからこそ、解決策を持ち込む余地が無限にある",
+        "attribution": "矢島正一 代表取締役社長"
+      },
+      "guestResharePost": "(＠ゲスト) 氏が語る、テクノロジーで農業を変える夢。私の起業物語にも共感できたはず！ #農業テック #起業 #スタートアップ",
+      "hashtags": [
+        "#農業テック",
+        "#起業",
+        "#スタートアップ"
+      ],
+      "mediaPath": "media/x/xTfnvRmwavE.mp4",
+      "reviewerNotes": [
+        "ゲストの@ハンドルを「（＠ゲスト）」と置き換える",
+        "本編のハイライトmp4（1〜2分）を添付",
+        "事実関係・敬称・所属をゲスト本人基準で確認"
+      ]
+    },
+    {
+      "youtubeId": "wyjwFxkeOGc",
+      "videoTitle": "#4 福元和彦理事長　福元クリニック　【日本唯一のTENGAドクター】",
+      "youtubeUrl": "https://www.youtube.com/watch?v=wyjwFxkeOGc",
+      "isShort": false,
+      "status": "pending_review",
+      "generatedAt": "2026-07-05T18:59:24.011Z",
+      "launchPost": "「性の問題は医療の問題であり、社会の問題でもある」　「日本唯一のTENGAドクター」福元和彦理事長が、タブーに挑み続けるユニークなキャリアと哲学を語ります。（＠ゲスト）",
+      "linkReply": "動画はこちら https://www.youtube.com/watch?v=wyjwFxkeOGc",
+      "thread": [
+        "「誰もやらないことをやるのが自分の使命だと思ってきた」",
+        "医療と産業が協力して社会課題を解決できることを示している"
+      ],
+      "quoteCard": {
+        "quote": "性の問題は医療の問題であり、社会の問題でもある",
+        "attribution": "福元和彦理事長"
+      },
+      "guestResharePost": "私の想いを伝えることができました。感謝です。（＠ゲスト） #性医療 #泌尿器科 #TENGA",
+      "hashtags": [
+        "#性医療",
+        "#泌尿器科",
+        "#TENGA"
+      ],
+      "mediaPath": "media/x/wyjwFxkeOGc.mp4",
+      "reviewerNotes": [
+        "ゲストの@ハンドルを「（＠ゲスト）」と置き換える",
+        "本編のハイライトmp4（1〜2分）を添付",
+        "事実関係・敬称・所属をゲスト本人基準で確認"
+      ]
+    },
+    {
+      "youtubeId": "mM6oIZ_KX9M",
+      "videoTitle": "#3 中野知治院長　鹿児島三井中央クリニック　【美容外科のリアル】",
+      "youtubeUrl": "https://www.youtube.com/watch?v=mM6oIZ_KX9M",
+      "isShort": false,
+      "status": "pending_review",
+      "generatedAt": "2026-07-05T18:59:22.681Z",
+      "launchPost": "美容外科は「患者さんの人生の自信を取り戻す手助けをする」仕事。鹿児島三井中央クリニックの中野知治院長に、美容外科のリアルを聞きました！（＠ゲスト）",
+      "linkReply": "こちらの動画では、中野知治院長が美容外科の実態やクリニック経営について語っています。詳しく見たい方はこちら https://www.youtube.com/watch?v=mM6oIZ_KX9M",
+      "thread": [
+        "美容外科は「患者さんの人生の自信を取り戻す手助けをする」仕事。中野知治院長の言葉に感銘を受けました。",
+        "中野知治院長は「医師になってからも『自分は何のために働くのか』を問い続けてきた」と語りました。自分自身のモチベーションを探求する姿に共感できますか？",
+        "美容医療の世界は変化が速いと言われています。中野知治院長は「常に学び続ける姿勢がないと取り残される」と強調しています。医療分野のプロフェッショナルにとっての学びの姿勢を学びます。"
+      ],
+      "quoteCard": {
+        "quote": "美容外科は患者さんの人生の自信を取り戻す手助けをする",
+        "attribution": "中野知治院長"
+      },
+      "guestResharePost": "美容外科のリアルを語りました！「美容外科は患者さんの人生の自信を取り戻す手助けをする」仕事です。（＠ゲスト）",
+      "hashtags": [
+        "#美容外科",
+        "#クリニック経営",
+        "#医師のキャリア"
+      ],
+      "mediaPath": "media/x/mM6oIZ_KX9M.mp4",
+      "reviewerNotes": [
+        "ゲストの@ハンドルを「（＠ゲスト）」と置き換える",
+        "本編のハイライトmp4（1〜2分）を添付",
+        "事実関係・敬称・所属をゲスト本人基準で確認"
+      ]
+    },
     {
       "youtubeId": "zMh0VrJs6qU",
       "videoTitle": "#2 藤浦剛己先生　米盛病院研修医2年目　【医学生必見】",
