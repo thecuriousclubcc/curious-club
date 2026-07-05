@@ -1,7 +1,7 @@
 'use client'
 
 import { useMemo, useRef, useState } from 'react'
-import { Search, Play, Clock, X } from 'lucide-react'
+import { Search, Play, Clock, X, Sparkles } from 'lucide-react'
 
 interface Hit {
   video_title: string
@@ -77,7 +77,33 @@ export default function BrainSearch() {
   const [groups, setGroups] = useState<VideoGroup[] | null>(null)
   const [loading, setLoading] = useState(false)
   const [playing, setPlaying] = useState<Hit | null>(null)
+  const [answer, setAnswer] = useState<{ text: string; sources: Hit[] } | null>(null)
+  const [asking, setAsking] = useState(false)
   const playerRef = useRef<HTMLDivElement>(null)
+
+  async function askAI(q: string) {
+    const trimmed = q.trim()
+    if (trimmed.length < 2 || asking) return
+    setQuery(trimmed)
+    setSearched(trimmed)
+    setGroups(null)
+    setPlaying(null)
+    setAnswer(null)
+    setAsking(true)
+    try {
+      const r = await fetch('/api/brain/ask', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ query: trimmed }),
+      })
+      const d = await r.json()
+      setAnswer({ text: d.answer ?? '回答を生成できませんでした', sources: d.sources ?? [] })
+    } catch {
+      setAnswer({ text: '回答を生成できませんでした。もう一度お試しください。', sources: [] })
+    } finally {
+      setAsking(false)
+    }
+  }
 
   async function search(q: string) {
     const trimmed = q.trim()
@@ -86,6 +112,7 @@ export default function BrainSearch() {
     setSearched(trimmed)
     setLoading(true)
     setPlaying(null)
+    setAnswer(null)
     try {
       const r = await fetch(`/api/brain?q=${encodeURIComponent(trimmed)}`)
       const d = await r.json()
@@ -142,6 +169,15 @@ export default function BrainSearch() {
         >
           検索
         </button>
+        <button
+          onClick={() => askAI(query)}
+          disabled={asking}
+          aria-label="AIに聞く"
+          className="inline-flex cursor-pointer items-center gap-1.5 rounded-2xl border border-teal-700/30 bg-white px-4 text-sm font-medium text-teal-800 shadow-sm transition-colors duration-200 hover:bg-teal-50 focus:outline-none focus:ring-2 focus:ring-teal-600/40 disabled:opacity-50"
+        >
+          <Sparkles className="h-4 w-4" />
+          <span className="hidden sm:inline">AIに聞く</span>
+        </button>
       </div>
 
       {/* Suggestion chips */}
@@ -195,6 +231,55 @@ export default function BrainSearch() {
           </div>
         )}
       </div>
+
+      {/* AI answer */}
+      {asking && (
+        <div className="mt-8 rounded-2xl border border-teal-100 bg-teal-50/50 p-6">
+          <p className="flex items-center gap-2 text-sm text-teal-800">
+            <Sparkles className="h-4 w-4 animate-pulse" />
+            全エピソードの発言を確認しています…
+          </p>
+        </div>
+      )}
+      {answer && !asking && (
+        <div className="mt-8 overflow-hidden rounded-2xl border border-teal-100 bg-white shadow-sm">
+          <div className="border-b border-teal-50 bg-teal-50/50 px-5 py-3">
+            <p className="flex items-center gap-2 text-xs font-medium tracking-wide text-teal-800">
+              <Sparkles className="h-3.5 w-3.5" />
+              AI回答 — 引用は実際の発言と機械照合済み
+            </p>
+          </div>
+          <p className="whitespace-pre-wrap p-5 text-sm leading-relaxed text-slate-800">
+            {answer.text}
+          </p>
+          {answer.sources.length > 0 && (
+            <ul className="divide-y divide-slate-50 border-t border-slate-100">
+              {answer.sources.map((s, i) => (
+                <li key={i}>
+                  <button
+                    onClick={() => playHit(s)}
+                    className="group flex w-full cursor-pointer items-start gap-4 p-5 text-left transition-colors duration-200 hover:bg-slate-50"
+                  >
+                    <span className="mt-0.5 inline-flex shrink-0 items-center gap-1 rounded-lg bg-teal-50 px-2.5 py-1.5 text-xs font-semibold tabular-nums text-teal-800 group-hover:bg-teal-100">
+                      <Play className="h-3 w-3" fill="currentColor" />
+                      {mmss(s.start_sec)}
+                    </span>
+                    <span className="min-w-0">
+                      <span className="mb-1 block text-xs text-slate-500">
+                        {s.speaker && <span className="font-medium">{s.speaker} · </span>}
+                        {s.video_title}
+                      </span>
+                      <span className="block text-sm leading-relaxed text-slate-800 line-clamp-2">
+                        「{s.quote}」
+                      </span>
+                    </span>
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      )}
 
       {/* Results */}
       <div className="mt-8 space-y-6">
