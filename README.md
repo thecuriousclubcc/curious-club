@@ -1,5 +1,7 @@
 # The Curious Club（キュリクラ）公式サイト
 
+[![CI](https://github.com/thecuriousclubcc/curious-club/actions/workflows/ci.yml/badge.svg)](https://github.com/thecuriousclubcc/curious-club/actions/workflows/ci.yml)
+
 YouTubeチャンネル「The Curious Club（キュリクラ）」の公式Webサイトです。
 Next.js 16 + TypeScript + Tailwind CSS で構築されています。
 
