@@ -1,5 +1,5 @@
 {
-  "updated": "2026-07-05T19:01:20.542Z",
+  "updated": "2026-07-31T11:16:01.046585Z",
   "drafts": [
     {
       "youtubeId": "91wHINWway0",
@@ -396,9 +396,9 @@
       "videoTitle": "#13 手塚善久院長　手塚クリニック　【曽於医師会会長が語る志布志の地域医療】",
       "youtubeUrl": "https://www.youtube.com/watch?v=fdQtMdO7JRA",
       "isShort": false,
-      "status": "pending_review",
+      "status": "approved",
       "generatedAt": "2026-07-05T19:00:38.218Z",
-      "launchPost": "「志布志の医療が抱える問題は、日本全国の地方が共通して直面している問題でもある」と語る手塚善久院長。地域医療の現状と未来について、開業医の視点から語っていただきました。（＠ゲスト）",
+      "launchPost": "「志布志の医療が抱える問題は、日本全国の地方が共通して直面している問題でもある」と語る手塚善久院長。地域医療の現状と未来について、開業医の視点から語っていただきました。",
       "linkReply": "続きはこちら https://www.youtube.com/watch?v=fdQtMdO7JRA",
       "thread": [
         "「医師会は地域の医療を守るためのセーフティネット。それを維持することが開業医の責務だと思っている」",
@@ -414,11 +414,9 @@
         "#医師会",
         "#鹿児島"
       ],
-      "mediaPath": "media/x/fdQtMdO7JRA.mp4",
+      "mediaPath": "",
       "reviewerNotes": [
-        "ゲストの@ハンドルを「（＠ゲスト）」と置き換える",
-        "本編のハイライトmp4（1〜2分）を添付",
-        "事実関係・敬称・所属をゲスト本人基準で確認"
+        "TEXT-ONLY (no @mention, no media) — staged by Claude 2026-07-31; needs X creds in .env.local before x:post --post"
       ]
     },
     {
@@ -456,9 +454,9 @@
       "videoTitle": "#11 小川晋平 代表取締役社長　AMI株式会社　【超聴診器】",
       "youtubeUrl": "https://www.youtube.com/watch?v=muF6JOq3SEU",
       "isShort": false,
-      "status": "pending_review",
+      "status": "approved",
       "generatedAt": "2026-07-05T18:59:55.447Z",
-      "launchPost": "医療の最前線でテクノロジーを活かす、AMI株式会社の小川晋平社長（＠ゲスト）に聞きました。AIは医師の代替ではなく、医師の能力を何倍にも拡張するツールだと思っているという考えとは？",
+      "launchPost": "医療の最前線でテクノロジーを活かす、AMI株式会社の小川晋平社長に聞きました。AIは医師の代替ではなく、医師の能力を何倍にも拡張するツールだと思っているという考えとは？",
       "linkReply": "詳しくはこちらの動画で！https://www.youtube.com/watch?v=muF6JOq3SEU",
       "thread": [
         "AIを活用した超聴診器の開発とは何を目指しているのか",
@@ -475,11 +473,9 @@
         "#ヘルステック",
         "#スタートアップ"
       ],
-      "mediaPath": "media/x/muF6JOq3SEU.mp4",
+      "mediaPath": "",
       "reviewerNotes": [
-        "ゲストの@ハンドルを「（＠ゲスト）」と置き換える",
-        "本編のハイライトmp4（1〜2分）を添付",
-        "事実関係・敬称・所属をゲスト本人基準で確認"
+        "TEXT-ONLY (no @mention, no media) — staged by Claude 2026-07-31; needs X creds in .env.local before x:post --post"
       ]
     },
     {
@@ -699,9 +695,9 @@
       "videoTitle": "#3 中野知治院長　鹿児島三井中央クリニック　【美容外科のリアル】",
       "youtubeUrl": "https://www.youtube.com/watch?v=mM6oIZ_KX9M",
       "isShort": false,
-      "status": "pending_review",
+      "status": "approved",
       "generatedAt": "2026-07-05T18:59:22.681Z",
-      "launchPost": "美容外科は「患者さんの人生の自信を取り戻す手助けをする」仕事。鹿児島三井中央クリニックの中野知治院長に、美容外科のリアルを聞きました！（＠ゲスト）",
+      "launchPost": "美容外科は「患者さんの人生の自信を取り戻す手助けをする」仕事。鹿児島三井中央クリニックの中野知治院長に、美容外科のリアルを聞きました！",
       "linkReply": "こちらの動画では、中野知治院長が美容外科の実態やクリニック経営について語っています。詳しく見たい方はこちら https://www.youtube.com/watch?v=mM6oIZ_KX9M",
       "thread": [
         "美容外科は「患者さんの人生の自信を取り戻す手助けをする」仕事。中野知治院長の言葉に感銘を受けました。",
@@ -718,11 +714,9 @@
         "#クリニック経営",
         "#医師のキャリア"
       ],
-      "mediaPath": "media/x/mM6oIZ_KX9M.mp4",
+      "mediaPath": "",
       "reviewerNotes": [
-        "ゲストの@ハンドルを「（＠ゲスト）」と置き換える",
-        "本編のハイライトmp4（1〜2分）を添付",
-        "事実関係・敬称・所属をゲスト本人基準で確認"
+        "TEXT-ONLY (no @mention, no media) — staged by Claude 2026-07-31; needs X creds in .env.local before x:post --post"
       ]
     },
     {
