@@ -1,6 +1,246 @@
 {
-  "updated": "2026-07-31T11:16:01.046585Z",
+  "updated": "2026-07-31T12:03:03.090Z",
   "drafts": [
+    {
+      "youtubeId": "2cypOXwQCVg",
+      "videoTitle": "【働きやすい医療現場づくりと｜地域医療のリアル】　#14 大西浩之理事長　大海クリニック｜鹿児島県医師会副会長",
+      "youtubeUrl": "https://www.youtube.com/watch?v=2cypOXwQCVg",
+      "isShort": false,
+      "status": "pending_review",
+      "generatedAt": "2026-07-31T12:03:03.089Z",
+      "launchPost": "医師の魅力とは何か？鹿児島県医師会副会長の大西浩之理事長が熱い想いを語ります。（＠ゲスト）",
+      "linkReply": "動画はこちら https://www.youtube.com/watch?v=2cypOXwQCVg",
+      "thread": [
+        "医師会や赤字病院の課題についてどう考えますか？",
+        "高校新卒スタッフ採用や働きやすい環境づくりについての意見を聞かせてください"
+      ],
+      "quoteCard": {
+        "quote": "医師の楽しさの原点",
+        "attribution": "大西浩之理事長"
+      },
+      "guestResharePost": "私たちの考えを変える、医師の魅力とは何か？（＠ゲスト）",
+      "hashtags": [
+        "#医療",
+        "#地域医療",
+        "#医師"
+      ],
+      "mediaPath": "media/x/2cypOXwQCVg.mp4",
+      "reviewerNotes": [
+        "ゲストの@ハンドルを「（＠ゲスト）」と置き換える",
+        "本編のハイライトmp4（1〜2分）を添付",
+        "事実関係・敬称・所属をゲスト本人基準で確認"
+      ]
+    },
+    {
+      "youtubeId": "6vDRdvr3n08",
+      "videoTitle": "相方は主席卒業！開業の流れ",
+      "youtubeUrl": "https://www.youtube.com/watch?v=6vDRdvr3n08",
+      "isShort": false,
+      "status": "pending_review",
+      "generatedAt": "2026-07-31T12:02:55.719Z",
+      "launchPost": "主席卒業後に開業した理由とは？（＠ゲスト）がお話しします",
+      "linkReply": "こちらの動画で（＠ゲスト）さんとの対談をご覧いただけます https://www.youtube.com/watch?v=6vDRdvr3n08",
+      "thread": [
+        "開業を決意した経緯",
+        "医師会副会長の役割について"
+      ],
+      "quoteCard": {
+        "quote": "医師の開業に必要なのは",
+        "attribution": "鹿児島医師会副会長"
+      },
+      "guestResharePost": "私が開業した理由を話しました（＠ゲスト）",
+      "hashtags": [
+        "#開業",
+        "#医師会",
+        "#鹿児島"
+      ],
+      "mediaPath": "media/x/6vDRdvr3n08.mp4",
+      "reviewerNotes": [
+        "ゲストの@ハンドルを「（＠ゲスト）」と置き換える",
+        "本編のハイライトmp4（1〜2分）を添付",
+        "事実関係・敬称・所属をゲスト本人基準で確認"
+      ]
+    },
+    {
+      "youtubeId": "QKhVVjkf4tY",
+      "videoTitle": "弟の球拾いから！大学生活の過ごし方",
+      "youtubeUrl": "https://www.youtube.com/watch?v=QKhVVjkf4tY",
+      "isShort": false,
+      "status": "pending_review",
+      "generatedAt": "2026-07-31T12:02:41.250Z",
+      "launchPost": "大学生活を充実させるコツとは？（＠ゲスト）が語る弟の球拾いから始まった学び",
+      "linkReply": "こちらの動画で（＠ゲスト）さんとの対話をチェック！https://www.youtube.com/watch?v=QKhVVjkf4tY",
+      "thread": [
+        "大学生活で大切なこと",
+        "人生で学ぶべきこと"
+      ],
+      "quoteCard": {
+        "quote": "人生は学び続けること",
+        "attribution": "理事長"
+      },
+      "guestResharePost": "私の大学生活について語りました！（＠ゲスト）",
+      "hashtags": [
+        "#大学生活",
+        "#学び",
+        "#人生"
+      ],
+      "mediaPath": "media/x/QKhVVjkf4tY.mp4",
+      "reviewerNotes": [
+        "ゲストの@ハンドルを「（＠ゲスト）」と置き換える",
+        "本編のハイライトmp4（1〜2分）を添付",
+        "事実関係・敬称・所属をゲスト本人基準で確認"
+      ]
+    },
+    {
+      "youtubeId": "Hd5X94_3r3k",
+      "videoTitle": "日曜診療を始めたら『お前どういうつもりだ』",
+      "youtubeUrl": "https://www.youtube.com/watch?v=Hd5X94_3r3k",
+      "isShort": false,
+      "status": "pending_review",
+      "generatedAt": "2026-07-31T12:02:27.026Z",
+      "launchPost": "『お前どう言うつもりだ』と言われた日曜診療の真実。院長に聞く、挑戦の理由とは。（＠ゲスト）",
+      "linkReply": "こちらの動画で詳細を聞く：https://www.youtube.com/watch?v=Hd5X94_3r3k",
+      "thread": [
+        "院長の挑戦は成功したのか？",
+        "日曜診療の始めたきっかけは何だったのか"
+      ],
+      "quoteCard": {
+        "quote": "お前どう言うつもりだ",
+        "attribution": "院長"
+      },
+      "guestResharePost": "院長の熱い想いを聞く『日曜診療を始めたら』。（＠ゲスト）",
+      "hashtags": [
+        "#医療",
+        "#挑戦",
+        "#日曜診療"
+      ],
+      "mediaPath": "media/x/Hd5X94_3r3k.mp4",
+      "reviewerNotes": [
+        "ゲストの@ハンドルを「（＠ゲスト）」と置き換える",
+        "本編のハイライトmp4（1〜2分）を添付",
+        "事実関係・敬称・所属をゲスト本人基準で確認"
+      ]
+    },
+    {
+      "youtubeId": "KNAW1q02lQA",
+      "videoTitle": "「“直美”は悪いことなのか？」",
+      "youtubeUrl": "https://www.youtube.com/watch?v=KNAW1q02lQA",
+      "isShort": false,
+      "status": "pending_review",
+      "generatedAt": "2026-07-31T12:02:19.677Z",
+      "launchPost": "「直美」は悪いことなのか？（＠ゲスト）さんと話を聞いてみてください",
+      "linkReply": "こちらの動画をYouTubeで見る：https://www.youtube.com/watch?v=KNAW1q02lQA",
+      "thread": [
+        "「直美」は本当に悪いことなのか？",
+        "（＠ゲスト）さんと話を聞いてみてください"
+      ],
+      "quoteCard": {
+        "quote": "「直美」は悪いことなのか？",
+        "attribution": "（＠ゲスト）さん"
+      },
+      "guestResharePost": "「直美」は悪いことなのか？（＠ゲスト）さんと話を聞いてみてください",
+      "hashtags": [
+        "#医療",
+        "#ビジネス",
+        "#社会"
+      ],
+      "mediaPath": "media/x/KNAW1q02lQA.mp4",
+      "reviewerNotes": [
+        "ゲストの@ハンドルを「（＠ゲスト）」と置き換える",
+        "本編のハイライトmp4（1〜2分）を添付",
+        "事実関係・敬称・所属をゲスト本人基準で確認"
+      ]
+    },
+    {
+      "youtubeId": "ZxHfzHzcygw",
+      "videoTitle": "「死なない科を探して、内視鏡医になった」",
+      "youtubeUrl": "https://www.youtube.com/watch?v=ZxHfzHzcygw",
+      "isShort": false,
+      "status": "pending_review",
+      "generatedAt": "2026-07-31T12:02:18.852Z",
+      "launchPost": "「死なない科を探して、内視鏡医になった」 （＠ゲスト） とは何が共感できるのか？そのストーリーとは？",
+      "linkReply": "こちらの動画で（＠ゲスト）さんのストーリーをチェック！https://www.youtube.com/watch?v=ZxHfzHzcygw",
+      "thread": [
+        "「内視鏡医になるためには、どのような経験が必要だったのか」という質問に、（＠ゲスト）さんはこう語りました。",
+        "その言葉は私にも大きな感銘を与えました。"
+      ],
+      "quoteCard": {
+        "quote": "内視鏡医は死なない科",
+        "attribution": "（＠ゲスト）"
+      },
+      "guestResharePost": "私が「死なない科」を探して内視鏡医になった理由。 （＠ゲスト）",
+      "hashtags": [
+        "#内視鏡医",
+        "#医師のストーリー",
+        "#夢への道"
+      ],
+      "mediaPath": "media/x/ZxHfzHzcygw.mp4",
+      "reviewerNotes": [
+        "ゲストの@ハンドルを「（＠ゲスト）」と置き換える",
+        "本編のハイライトmp4（1〜2分）を添付",
+        "事実関係・敬称・所属をゲスト本人基準で確認"
+      ]
+    },
+    {
+      "youtubeId": "PLrVJDJR89I",
+      "videoTitle": "「48日連続で働いても、楽しかった」",
+      "youtubeUrl": "https://www.youtube.com/watch?v=PLrVJDJR89I",
+      "isShort": false,
+      "status": "pending_review",
+      "generatedAt": "2026-07-31T12:02:17.689Z",
+      "launchPost": "48日連続で仕事をしていても、楽しかった？（＠ゲスト）さんとの対談を公開！その理由は何ですか？",
+      "linkReply": "こちらのYouTube動画で対談の模様をチェック！https://www.youtube.com/watch?v=PLrVJDJR89I",
+      "thread": [
+        "（＠ゲスト）さんの言葉から、仕事と楽しみの境界が曖昧になる瞬間とは？",
+        "48日連続という超長期の仕事が、（＠ゲスト）さんにどんな影響を与えたのか？"
+      ],
+      "quoteCard": {
+        "quote": "48日連続で働いても、楽しかった",
+        "attribution": "（＠ゲスト）さん"
+      },
+      "guestResharePost": "私と（＠ゲスト）さんのトーク！「48日連続で働いても、楽しかった」を見てみてください！",
+      "hashtags": [
+        "#医学生インタビュー",
+        "#キュー リクラ",
+        "#熱を持って生きる人"
+      ],
+      "mediaPath": "media/x/PLrVJDJR89I.mp4",
+      "reviewerNotes": [
+        "ゲストの@ハンドルを「（＠ゲスト）」と置き換える",
+        "本編のハイライトmp4（1〜2分）を添付",
+        "事実関係・敬称・所属をゲスト本人基準で確認"
+      ]
+    },
+    {
+      "youtubeId": "LcRk3ms4bHY",
+      "videoTitle": "「医師会副会長、医学部で13科目落としていた」",
+      "youtubeUrl": "https://www.youtube.com/watch?v=LcRk3ms4bHY",
+      "isShort": false,
+      "status": "pending_review",
+      "generatedAt": "2026-07-31T12:02:16.452Z",
+      "launchPost": "13科目落としていたが、医師会副会長に！（＠ゲスト）が語る、医学部時代の挫折から今まで",
+      "linkReply": "詳しくはこちら https://www.youtube.com/watch?v=LcRk3ms4bHY",
+      "thread": [
+        "医学部で13科目落としていたという（＠ゲスト）さん。そこから医師会副会長に至るまで、どのような道のりを歩みましたか？",
+        "（＠ゲスト）さんの経験は、挫折から学び、再挑戦する姿に多くの人に共感をもたらします"
+      ],
+      "quoteCard": {
+        "quote": "挫折することよりも、挫折してからどう立ち直るかが大切",
+        "attribution": "医師会副会長（＠ゲスト）"
+      },
+      "guestResharePost": "私が医学部で13科目落としていた時代から、現在医師会副会長として歩んできた道のり。（＠ゲスト）",
+      "hashtags": [
+        "#医療",
+        "#医師会",
+        "#挑戦"
+      ],
+      "mediaPath": "media/x/LcRk3ms4bHY.mp4",
+      "reviewerNotes": [
+        "ゲストの@ハンドルを「（＠ゲスト）」と置き換える",
+        "本編のハイライトmp4（1〜2分）を添付",
+        "事実関係・敬称・所属をゲスト本人基準で確認"
+      ]
+    },
     {
       "youtubeId": "91wHINWway0",
       "videoTitle": "医学生へのアドバイス！無駄と思えることに全力で打ち込む重要性 #shorts #インタビュー #医学生",
