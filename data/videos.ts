@@ -172,6 +172,146 @@ export const videos: Video[] = [
     featured: true,
     tags: ['地域医療', '医師会', '鹿児島'],
   },
+  {
+    id: '14',
+    youtubeId: '6vDRdvr3n08',
+    title: '相方は主席卒業！開業の流れ',
+    description: '鹿児島医師会副会長から学ぶ開業',
+    thumbnailUrl: 'https://img.youtube.com/vi/6vDRdvr3n08/maxresdefault.jpg',
+    youtubeUrl: 'https://www.youtube.com/watch?v=6vDRdvr3n08',
+    publishedAt: '2026-07-24',
+    featured: false,
+    tags: [],
+    viewCount: '1429',
+  },
+  {
+    id: '15',
+    youtubeId: '2cypOXwQCVg',
+    title: '【働きやすい医療現場づくりと｜地域医療のリアル】　#14 大西浩之理事長　大海クリニック｜鹿児島県医師会副会長',
+    description: `【今回のゲスト】
+「大海クリニック」大西浩之理事長
+学生時代のテニスや恩師との出会いから始まり、卒業後の現実や進路選択、そして医師としての楽しさの原点まで――。
+地域医療とICTの可能性を信じ、高校新卒スタッフ採用や働きやすい環境づくりにも挑戦する大西理事長。
+医師会や赤字病院の課題、子育てとの両立、そして未来の医学生への熱いメッセージまで、率直で温かみあふれる語り口でお届けします。
+
+【この動画について】
+The Curious Clubでは、「好奇心」をテーマに、さまざまな人たちの人生と考えに迫ります。
+あなたの日常に、ひとつ新しい問いを。
+
+【チャンネル登録はこちら】
+👉 [ @TheCuriousClub_CC   ]
+
+【出演希望の方へ】
+「出てみたい！」そんなあなたをお待ちしています。
+私たちThe Curious Clubでは、熱い想いやユニークな人生を語ってくれる方を募集中です。
+ぜひこちらのフォームからご連絡ください👇
+https://forms.gle/WqGdjf34wtjJqdct5
+
+【SNSもチェック！】
+Instagram：@thecuriousclub_cc
+ https://www.instagram.com/thecuriousclub_cc/
+
+Note：@thecuriousclub
+https://note.com/thecuriousclub
+
+Spotify：@The Curious Club
+https://open.spotify.com/show/2txhDE2vizjPRoOXYKMYCd?si=R1fOo5dNSf6bbn9l9a89Iw
+
+0:25 自己紹介
+1:00 経歴
+4:26 学生時代
+11:02 大海クリニック
+19:12 医師の魅力
+24:16 医師を続けて分かる事
+28:15 なぜ手を挙げるのか
+31:26 鹿児島県医師会
+33:59 若い医師と医師会
+36:57 病院の赤字問題
+39:49 病院の赤字解決
+43:12 ICTと医師
+44:23 大海クリニックの新しい取り組み
+48:53 大西先生の楽しみ
+52:27 病院継承と子供
+57:29 医学生へのメッセージ`,
+    thumbnailUrl: 'https://img.youtube.com/vi/2cypOXwQCVg/maxresdefault.jpg',
+    youtubeUrl: 'https://www.youtube.com/watch?v=2cypOXwQCVg',
+    publishedAt: '2026-07-24',
+    featured: false,
+    tags: [],
+    viewCount: '33',
+  },
+  {
+    id: '16',
+    youtubeId: 'QKhVVjkf4tY',
+    title: '弟の球拾いから！大学生活の過ごし方',
+    description: '',
+    thumbnailUrl: 'https://img.youtube.com/vi/QKhVVjkf4tY/maxresdefault.jpg',
+    youtubeUrl: 'https://www.youtube.com/watch?v=QKhVVjkf4tY',
+    publishedAt: '2026-07-25',
+    featured: false,
+    tags: [],
+    viewCount: '1754',
+  },
+  {
+    id: '17',
+    youtubeId: 'Hd5X94_3r3k',
+    title: '日曜診療を始めたら『お前どういうつもりだ』',
+    description: '',
+    thumbnailUrl: 'https://img.youtube.com/vi/Hd5X94_3r3k/maxresdefault.jpg',
+    youtubeUrl: 'https://www.youtube.com/watch?v=Hd5X94_3r3k',
+    publishedAt: '2026-07-27',
+    featured: false,
+    tags: [],
+    viewCount: '1087',
+  },
+  {
+    id: '18',
+    youtubeId: 'KNAW1q02lQA',
+    title: '「“直美”は悪いことなのか？」',
+    description: '',
+    thumbnailUrl: 'https://img.youtube.com/vi/KNAW1q02lQA/maxresdefault.jpg',
+    youtubeUrl: 'https://www.youtube.com/watch?v=KNAW1q02lQA',
+    publishedAt: '2026-07-28',
+    featured: false,
+    tags: [],
+    viewCount: '1790',
+  },
+  {
+    id: '19',
+    youtubeId: 'ZxHfzHzcygw',
+    title: '「死なない科を探して、内視鏡医になった」',
+    description: '',
+    thumbnailUrl: 'https://img.youtube.com/vi/ZxHfzHzcygw/maxresdefault.jpg',
+    youtubeUrl: 'https://www.youtube.com/watch?v=ZxHfzHzcygw',
+    publishedAt: '2026-07-29',
+    featured: false,
+    tags: [],
+    viewCount: '1910',
+  },
+  {
+    id: '20',
+    youtubeId: 'PLrVJDJR89I',
+    title: '「48日連続で働いても、楽しかった」',
+    description: '',
+    thumbnailUrl: 'https://img.youtube.com/vi/PLrVJDJR89I/maxresdefault.jpg',
+    youtubeUrl: 'https://www.youtube.com/watch?v=PLrVJDJR89I',
+    publishedAt: '2026-07-30',
+    featured: false,
+    tags: [],
+    viewCount: '1714',
+  },
+  {
+    id: '21',
+    youtubeId: 'LcRk3ms4bHY',
+    title: '「医師会副会長、医学部で13科目落としていた」',
+    description: '',
+    thumbnailUrl: 'https://img.youtube.com/vi/LcRk3ms4bHY/maxresdefault.jpg',
+    youtubeUrl: 'https://www.youtube.com/watch?v=LcRk3ms4bHY',
+    publishedAt: '2026-07-31',
+    featured: false,
+    tags: [],
+    viewCount: '1526',
+  },
 ]
 
 export const featuredVideos = videos.filter((v) => v.featured)
