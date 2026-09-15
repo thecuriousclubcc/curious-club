@@ -1,0 +1,352 @@
+"""Tests for the 全銀 総合振込 pipeline. Run: python3 -m unittest discover -s tests"""
+
+from __future__ import annotations
+
+import sys
+import unittest
+from datetime import date
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+
+from zengin.format import (DATA_FIELDS, END_FIELDS, HEADER_FIELDS,
+                           TRAILER_FIELDS, build_data, build_header,
+                           build_trailer, build_end, field_offsets, render)
+from zengin.invoices import InvoiceRow, aggregate, detect_anomalies
+from zengin.kana import KanaError, byte_length, to_zengin_kana
+from zengin.master import Payee
+from zengin.model import (Payment, Requester, TransferBatch, ValidationError)
+from zengin.verify import verify
+
+
+def make_requester(**kw):
+    base = dict(
+        consignor_code="1234567890",
+        name_kana="ｲ)ﾐﾗｲﾘﾊﾋﾞﾘﾋﾞﾖｳｲﾝ",
+        bank_code="0185",
+        bank_name_kana="ｶｺﾞｼﾏ",
+        branch_code="101",
+        branch_name_kana="ﾎﾝﾃﾝ",
+        deposit_type="1",
+        account_number="1234567",
+    )
+    base.update(kw)
+    return Requester(**base)
+
+
+def make_payment(**kw):
+    base = dict(
+        payee_id="P001",
+        bank_code="0185",
+        bank_name_kana="ｶｺﾞｼﾏ",
+        branch_code="201",
+        branch_name_kana="ﾃﾝﾓﾝｶﾝ",
+        deposit_type="1",
+        account_number="7654321",
+        payee_name_kana="ｶ)ｻﾂﾏｼﾖｳｼﾞ",
+        amount=123456,
+    )
+    base.update(kw)
+    return Payment(**base)
+
+
+def make_batch(payments=None, **kw):
+    return TransferBatch(
+        requester=make_requester(),
+        transfer_date=kw.get("transfer_date", date(2026, 10, 31)),
+        payments=payments if payments is not None else [make_payment()],
+    )
+
+
+class TestRecordGeometry(unittest.TestCase):
+    """Every record must be exactly 120 bytes, always."""
+
+    def test_field_tables_sum_to_120(self):
+        for name, table in (("header", HEADER_FIELDS), ("data", DATA_FIELDS),
+                            ("trailer", TRAILER_FIELDS), ("end", END_FIELDS)):
+            self.assertEqual(sum(f.length for f in table), 120, name)
+
+    def test_offsets_are_contiguous(self):
+        for table in (HEADER_FIELDS, DATA_FIELDS, TRAILER_FIELDS, END_FIELDS):
+            offsets = field_offsets(table)
+            self.assertEqual(offsets[0][1], 1)
+            self.assertEqual(offsets[-1][2], 120)
+            for (_, _, prev_end), (_, start, _) in zip(offsets, offsets[1:]):
+                self.assertEqual(start, prev_end + 1)
+
+    def test_all_records_are_120_sjis_bytes(self):
+        batch = make_batch()
+        for rec in (build_header(batch), build_data(batch.payments[0]),
+                    build_trailer(batch), build_end()):
+            self.assertEqual(len(rec.encode("cp932")), 120)
+
+    def test_record_length_holds_with_dakuten_heavy_name(self):
+        # ﾞ/ﾟ are separate bytes; a name full of them must still fit exactly.
+        p = make_payment(payee_name_kana="ﾊﾞﾋﾞﾌﾞﾍﾞﾎﾞﾊﾟﾋﾟﾌﾟﾍﾟﾎﾟﾀﾞﾁﾞﾂﾞﾃﾞﾄﾞ")
+        self.assertEqual(len(build_data(p).encode("cp932")), 120)
+
+
+class TestFieldPlacement(unittest.TestCase):
+    """Values must land on the exact byte positions the bank reads."""
+
+    def test_header_field_positions(self):
+        rec = build_header(make_batch()).encode("cp932")
+        self.assertEqual(rec[0:1], b"1")            # データ区分
+        self.assertEqual(rec[1:3], b"21")           # 種別コード
+        self.assertEqual(rec[3:4], b"0")            # コード区分
+        self.assertEqual(rec[4:14], b"1234567890")  # 委託者コード
+        self.assertEqual(rec[54:58], b"1031")       # 取組日 MMDD
+        self.assertEqual(rec[58:62], b"0185")       # 仕向銀行番号
+        self.assertEqual(rec[77:80], b"101")        # 仕向支店番号
+        self.assertEqual(rec[95:96], b"1")          # 預金種目
+        self.assertEqual(rec[96:103], b"1234567")   # 口座番号
+        self.assertEqual(rec[103:120], b" " * 17)   # ダミー
+
+    def test_data_field_positions(self):
+        rec = build_data(make_payment()).encode("cp932")
+        self.assertEqual(rec[0:1], b"2")
+        self.assertEqual(rec[1:5], b"0185")
+        self.assertEqual(rec[20:23], b"201")
+        self.assertEqual(rec[42:43], b"1")
+        self.assertEqual(rec[43:50], b"7654321")
+        self.assertEqual(rec[80:90], b"0000123456")   # 振込金額 right-justified
+        self.assertEqual(rec[90:91], b"0")            # 新規コード
+
+    def test_amount_is_zero_padded_not_space_padded(self):
+        rec = build_data(make_payment(amount=1)).encode("cp932")
+        self.assertEqual(rec[80:90], b"0000000001")
+
+    def test_account_number_short_is_left_zero_filled(self):
+        rec = build_data(make_payment(account_number="123")).encode("cp932")
+        self.assertEqual(rec[43:50], b"0000123")
+
+    def test_payee_name_is_left_justified_space_filled(self):
+        rec = build_data(make_payment(payee_name_kana="ｱｲｳ")).encode("cp932")
+        self.assertEqual(rec[50:80], "ｱｲｳ".encode("cp932") + b" " * 27)
+
+    def test_trailer_totals(self):
+        batch = make_batch([make_payment(amount=100),
+                            make_payment(payee_id="P002", amount=250)])
+        rec = build_trailer(batch).encode("cp932")
+        self.assertEqual(rec[0:1], b"8")
+        self.assertEqual(rec[1:7], b"000002")
+        self.assertEqual(rec[7:19], b"000000000350")
+
+    def test_end_record(self):
+        rec = build_end().encode("cp932")
+        self.assertEqual(rec[0:1], b"9")
+        self.assertEqual(rec[1:120], b" " * 119)
+
+
+class TestOverflowIsRejected(unittest.TestCase):
+    """Truncating a name or an amount would move money to the wrong place."""
+
+    def test_too_long_payee_name_raises(self):
+        p = make_payment(payee_name_kana="ｱ" * 31)
+        with self.assertRaises(ValidationError) as cm:
+            build_data(p)
+        self.assertIn("受取人名", str(cm.exception))
+
+    def test_name_of_exactly_30_bytes_is_accepted(self):
+        p = make_payment(payee_name_kana="ｱ" * 30)
+        self.assertEqual(len(build_data(p).encode("cp932")), 120)
+
+    def test_dakuten_name_overflowing_30_bytes_raises(self):
+        # 16 voiced kana = 32 bytes, over the 30-byte field.
+        p = make_payment(payee_name_kana="ｶﾞ" * 16)
+        with self.assertRaises(ValidationError):
+            build_data(p)
+
+    def test_amount_over_10_digits_raises(self):
+        with self.assertRaises(ValidationError):
+            make_payment(amount=10_000_000_000).validate()
+
+    def test_float_amount_raises(self):
+        with self.assertRaises(ValidationError):
+            make_payment(amount=1234.0).validate()
+
+    def test_bool_amount_raises(self):
+        with self.assertRaises(ValidationError):
+            make_payment(amount=True).validate()
+
+    def test_zero_amount_raises(self):
+        with self.assertRaises(ValidationError):
+            make_payment(amount=0).validate()
+
+
+class TestKana(unittest.TestCase):
+    def test_dakuten_is_two_bytes(self):
+        r = to_zengin_kana("ガ")
+        self.assertEqual(r.text, "ｶﾞ")
+        self.assertEqual(byte_length(r.text), 2)
+
+    def test_small_kana_folds_to_large(self):
+        r = to_zengin_kana("キャノン")
+        self.assertEqual(r.text, "ｷﾔﾉﾝ")
+        self.assertTrue(r.changed)
+
+    def test_halfwidth_small_kana_folds_to_large(self):
+        self.assertEqual(to_zengin_kana("ｷｬﾉﾝ").text, "ｷﾔﾉﾝ")
+
+    def test_hiragana_converts_to_katakana(self):
+        self.assertEqual(to_zengin_kana("みらい").text, "ﾐﾗｲ")
+
+    def test_lowercase_ascii_uppercases(self):
+        self.assertEqual(to_zengin_kana("abc").text, "ABC")
+
+    def test_fullwidth_alnum_narrows(self):
+        self.assertEqual(to_zengin_kana("ＡＢ１２").text, "AB12")
+
+    def test_long_vowel_is_not_a_hyphen(self):
+        self.assertEqual(to_zengin_kana("ミラー").text, "ﾐﾗｰ")
+        self.assertEqual(to_zengin_kana("ミラ－").text, "ﾐﾗ-")
+
+    def test_kanji_is_rejected_not_guessed(self):
+        with self.assertRaises(KanaError):
+            to_zengin_kana("株式会社")
+
+    def test_disallowed_punctuation_is_rejected(self):
+        for bad in ("ﾃｽﾄ｡", "ﾃｽﾄ･", "ﾃｽﾄ｢"):
+            with self.assertRaises(KanaError):
+                to_zengin_kana(bad)
+
+    def test_every_output_char_is_one_sjis_byte(self):
+        r = to_zengin_kana("ガギグゲゴパピプペポアイウabc123-. ()")
+        self.assertEqual(byte_length(r.text), len(r.text))
+
+
+class TestVerifier(unittest.TestCase):
+    def test_clean_file_has_no_problems(self):
+        batch = make_batch([make_payment(amount=100),
+                            make_payment(payee_id="P002", amount=250)])
+        raw = render(batch)
+        self.assertEqual(verify(raw, expected_count=2, expected_total=350), [])
+
+    def test_file_byte_length_is_exact(self):
+        batch = make_batch([make_payment()])
+        raw = render(batch, newline="")
+        self.assertEqual(len(raw), 120 * 4)   # header + 1 data + trailer + end
+
+    def test_crlf_file_byte_length(self):
+        batch = make_batch([make_payment()])
+        raw = render(batch, newline="\r\n")
+        self.assertEqual(len(raw), (120 + 2) * 4)
+
+    def test_corrupted_total_is_caught(self):
+        batch = make_batch([make_payment(amount=100)])
+        raw = bytearray(render(batch))
+        # Corrupt the trailer's 合計金額 only.
+        idx = raw.find(b"8", (120 + 2) * 2)
+        trailer_start = (120 + 2) * 2
+        raw[trailer_start + 7:trailer_start + 19] = b"000000009999"
+        problems = verify(bytes(raw))
+        self.assertTrue(any("合計金額" in str(p) for p in problems), problems)
+
+    def test_truncated_record_is_caught(self):
+        batch = make_batch([make_payment()])
+        raw = render(batch, newline="")[:-10]
+        problems = verify(raw)
+        self.assertTrue(any("レコード長" in str(p) for p in problems), problems)
+
+    def test_expected_total_mismatch_is_caught(self):
+        batch = make_batch([make_payment(amount=100)])
+        problems = verify(render(batch), expected_total=999)
+        self.assertTrue(problems)
+
+    def test_zero_account_number_is_caught(self):
+        p = make_payment(account_number="0")
+        batch = make_batch([p])
+        problems = verify(render(batch))
+        self.assertTrue(any("口座番号" in str(p) for p in problems), problems)
+
+
+class TestAggregation(unittest.TestCase):
+    def make_payee(self, pid="P001", **kw):
+        base = dict(
+            payee_id=pid, display_name="薩摩商事株式会社",
+            bank_code="0185", bank_name_kana="ｶｺﾞｼﾏ",
+            branch_code="201", branch_name_kana="ﾃﾝﾓﾝｶﾝ",
+            deposit_type="1", account_number="7654321",
+            payee_name_kana="ｶ)ｻﾂﾏｼﾖｳｼﾞ", fee_borne_by="sender",
+            verified_on=date(2026, 9, 1), verified_by="中村",
+            conversion_notes=[],
+        )
+        base.update(kw)
+        return Payee(**base)
+
+    def test_multiple_invoices_sum_into_one_transfer(self):
+        payees = {"P001": self.make_payee()}
+        rows = [
+            InvoiceRow("P001", "A-1", date(2026, 10, 1), 1000, "a.pdf"),
+            InvoiceRow("P001", "A-2", date(2026, 10, 5), 2500, "b.pdf"),
+        ]
+        payments = aggregate(rows, payees)
+        self.assertEqual(len(payments), 1)
+        self.assertEqual(payments[0].amount, 3500)
+        self.assertEqual(sorted(payments[0].source_documents), ["a.pdf", "b.pdf"])
+
+    def test_unknown_payee_raises(self):
+        rows = [InvoiceRow("NOPE", "A-1", date(2026, 10, 1), 1000, "a.pdf")]
+        with self.assertRaises(ValidationError) as cm:
+            aggregate(rows, {"P001": self.make_payee()})
+        self.assertIn("振込先マスタ", str(cm.exception))
+
+    def test_unverified_account_blocks_the_run(self):
+        payees = {"P001": self.make_payee(verified_on=None, verified_by="")}
+        rows = [InvoiceRow("P001", "A-1", date(2026, 10, 1), 1000, "a.pdf")]
+        with self.assertRaises(ValidationError) as cm:
+            aggregate(rows, payees)
+        self.assertIn("確認", str(cm.exception))
+
+    def test_totals_match_between_sheet_and_trailer(self):
+        payees = {"P001": self.make_payee(), "P002": self.make_payee("P002")}
+        rows = [
+            InvoiceRow("P001", "A-1", date(2026, 10, 1), 111, "a.pdf"),
+            InvoiceRow("P002", "B-1", date(2026, 10, 2), 222, "b.pdf"),
+            InvoiceRow("P001", "A-2", date(2026, 10, 3), 333, "c.pdf"),
+        ]
+        batch = make_batch(aggregate(rows, payees))
+        self.assertEqual(batch.total_amount, 666)
+        self.assertEqual(batch.total_amount, sum(r.amount for r in rows))
+        self.assertEqual(verify(render(batch), expected_total=666), [])
+
+
+class TestAnomalies(unittest.TestCase):
+    def test_new_payee_is_flagged(self):
+        rows = [InvoiceRow("P001", "A-1", date(2026, 10, 1), 1000, "a.pdf")]
+        kinds = {a.kind for a in detect_anomalies(rows, {})}
+        self.assertIn("new_payee", kinds)
+
+    def test_outlier_beyond_2sd_is_flagged(self):
+        rows = [InvoiceRow("P001", "A-1", date(2026, 10, 1), 500_000, "a.pdf")]
+        history = {"P001": [100_000, 102_000, 98_000, 101_000]}
+        kinds = {a.kind for a in detect_anomalies(rows, history)}
+        self.assertIn("outlier", kinds)
+
+    def test_in_range_amount_is_not_flagged(self):
+        rows = [InvoiceRow("P001", "A-1", date(2026, 10, 1), 101_000, "a.pdf")]
+        history = {"P001": [100_000, 102_000, 98_000, 101_000]}
+        self.assertEqual(detect_anomalies(rows, history), [])
+
+    def test_constant_history_change_is_flagged(self):
+        rows = [InvoiceRow("P001", "A-1", date(2026, 10, 1), 55_000, "a.pdf")]
+        history = {"P001": [50_000, 50_000, 50_000]}
+        kinds = {a.kind for a in detect_anomalies(rows, history)}
+        self.assertIn("changed", kinds)
+
+
+class TestDeterminism(unittest.TestCase):
+    def test_same_input_produces_identical_bytes(self):
+        a = render(make_batch([make_payment(), make_payment(payee_id="P002")]))
+        b = render(make_batch([make_payment(), make_payment(payee_id="P002")]))
+        self.assertEqual(a, b)
+
+    def test_output_contains_no_multibyte_characters(self):
+        raw = render(make_batch())
+        self.assertEqual(len(raw.replace(b"\r\n", b"")), 120 * 4)
+        for byte in raw:
+            self.assertLess(byte, 0xE0)
+
+
+if __name__ == "__main__":
+    unittest.main()

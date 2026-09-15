@@ -1,0 +1,101 @@
+"""Machine-checks that this pipeline cannot reach the network or a model.
+
+別章第5条第1項 (personal data stays inside the closed hospital environment) and
+第6条第1項 (no personal data into generative AI) are contract terms, not
+preferences. This test is the evidence that the 経理 pipeline satisfies them,
+and can be cited directly in the 検査基準.
+"""
+
+from __future__ import annotations
+
+import ast
+import socket
+import sys
+import unittest
+from pathlib import Path
+
+PACKAGE = Path(__file__).resolve().parent.parent / "zengin"
+sys.path.insert(0, str(PACKAGE.parent))
+
+# Modules that would give the pipeline a way off the machine, or to a model.
+FORBIDDEN_IMPORTS = {
+    "socket", "http", "httplib", "urllib", "urllib2", "urllib3", "requests",
+    "httpx", "aiohttp", "ftplib", "smtplib", "telnetlib", "xmlrpc",
+    "subprocess", "openai", "anthropic", "ollama", "groq", "google",
+    "transformers", "torch", "llama_cpp", "langchain", "boto3",
+}
+
+
+def _module_files() -> list[Path]:
+    return sorted(PACKAGE.glob("*.py"))
+
+
+class TestNoNetworkImports(unittest.TestCase):
+    def test_no_forbidden_imports_anywhere_in_the_package(self):
+        offenders: list[str] = []
+        for path in _module_files():
+            tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
+            for node in ast.walk(tree):
+                if isinstance(node, ast.Import):
+                    names = [a.name for a in node.names]
+                elif isinstance(node, ast.ImportFrom):
+                    names = [node.module or ""]
+                else:
+                    continue
+                for name in names:
+                    root = name.split(".")[0]
+                    if root in FORBIDDEN_IMPORTS:
+                        offenders.append(f"{path.name}:{node.lineno} imports {name}")
+        self.assertEqual(offenders, [], "ネットワーク/AI モジュールの import: " + str(offenders))
+
+    def test_package_has_modules_to_check(self):
+        # Guards against the check silently passing on an empty glob.
+        self.assertGreaterEqual(len(_module_files()), 5)
+
+
+class TestNoSocketAtRuntime(unittest.TestCase):
+    """Run the whole pipeline with sockets disabled; it must still work."""
+
+    def test_full_pipeline_runs_with_sockets_disabled(self):
+        from datetime import date
+
+        real_socket = socket.socket
+
+        def blocked(*args, **kwargs):
+            raise AssertionError("パイプラインがソケットを開こうとしました")
+
+        socket.socket = blocked
+        try:
+            from zengin.format import render
+            from zengin.invoices import InvoiceRow, aggregate
+            from zengin.master import Payee
+            from zengin.model import Requester, TransferBatch
+            from zengin.verify import verify
+
+            payee = Payee(
+                payee_id="P001", display_name="テスト商事",
+                bank_code="0185", bank_name_kana="ｶｺﾞｼﾏ",
+                branch_code="201", branch_name_kana="ﾃﾝﾓﾝｶﾝ",
+                deposit_type="1", account_number="7654321",
+                payee_name_kana="ｶ)ﾃｽﾄｼﾖｳｼﾞ", fee_borne_by="sender",
+                verified_on=date(2026, 9, 1), verified_by="中村",
+                conversion_notes=[],
+            )
+            rows = [InvoiceRow("P001", "T-1", date(2026, 10, 1), 12345, "t.pdf")]
+            batch = TransferBatch(
+                requester=Requester(
+                    consignor_code="0000012345", name_kana="ｲ)ﾃｽﾄ",
+                    bank_code="0185", bank_name_kana="ｶｺﾞｼﾏ",
+                    branch_code="101", branch_name_kana="ﾎﾝﾃﾝ",
+                    deposit_type="1", account_number="1234567"),
+                transfer_date=date(2026, 10, 31),
+                payments=aggregate(rows, {"P001": payee}),
+            )
+            raw = render(batch)
+            self.assertEqual(verify(raw, expected_count=1, expected_total=12345), [])
+        finally:
+            socket.socket = real_socket
+
+
+if __name__ == "__main__":
+    unittest.main()

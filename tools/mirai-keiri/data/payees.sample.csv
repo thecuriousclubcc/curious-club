@@ -1,0 +1,5 @@
+payee_id,display_name,bank_code,bank_name_kana,branch_code,branch_name_kana,deposit_type,account_number,payee_name_kana,fee_borne_by,verified_on,verified_by
+P001,薩摩医療器株式会社,0185,ｶｺﾞｼﾏ,201,ﾃﾝﾓﾝｶﾝ,1,7654321,ｶ)ｻﾂﾏｲﾘﾖｳｷ,sender,2026-09-01,中村
+P002,九州リネンサービス,0182,ﾋｺﾞ,015,ｶｺﾞｼﾏ,1,1122334,ｷﾕｳｼﾕｳﾘﾈﾝｻｰﾋﾞｽ,sender,2026-09-01,中村
+P003,南日本メディカル株式会社,0005,ﾐﾂﾋﾞｼUFJ,135,ｶｺﾞｼﾏ,2,0099887,ｶ)ﾐﾅﾐﾆﾂﾎﾟﾝﾒﾃﾞｲｶﾙ,beneficiary,2026-09-10,中村
+P004,桜島清掃サービス有限会社,0185,ｶｺﾞｼﾏ,330,ﾀﾆﾔﾏ,1,5566778,ﾕ)ｻｸﾗｼﾞﾏｾｲｿｳ,sender,2026-09-12,中村

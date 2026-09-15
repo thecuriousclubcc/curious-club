@@ -1,0 +1,6 @@
+out/
+__pycache__/
+*.pyc
+data/payees.csv
+data/invoices-*.csv
+data/history.json
