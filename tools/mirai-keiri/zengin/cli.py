@@ -42,6 +42,9 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--out", required=True, help="出力ディレクトリ")
     ap.add_argument("--history", help="支払履歴 JSON (2σ判定用)")
     ap.add_argument("--newline", default="crlf", choices=["crlf", "none"])
+    ap.add_argument("--route", default="zengin", choices=["zengin", "screen"],
+                    help="zengin=外部ファイル送信 / screen=データ登録(金額外部取込)")
+    ap.add_argument("--fees", help="手数料テーブル JSON (先方負担がある場合に必須)")
     ap.add_argument("--allow-unverified", action="store_true",
                     help="口座未確認の支払先を許可（通常は使わない）")
     args = ap.parse_args(argv)
@@ -57,8 +60,14 @@ def main(argv: list[str] | None = None) -> int:
         requester = Requester(**cfg)
         payees = load_payees(args.master)
         invoices = load_invoices(args.invoices)
+        from .fees import FeePolicy, Route
+        fee_policy = None
+        if args.fees:
+            fee_policy = FeePolicy(**json.loads(
+                Path(args.fees).read_text(encoding="utf-8")))
         payments = aggregate(invoices, payees,
-                             require_verified=not args.allow_unverified)
+                             require_verified=not args.allow_unverified,
+                             route=Route(args.route), fee_policy=fee_policy)
         batch = TransferBatch(requester=requester, transfer_date=transfer_date,
                               payments=payments)
         batch.validate()

@@ -1,0 +1,10 @@
+{
+  "consignor_code": "<FB-Web の委託者コード 10桁>",
+  "name_kana": "ｲ)ﾐﾗｲ",
+  "bank_code": "0185",
+  "bank_name_kana": "ｶｺﾞｼﾏ",
+  "branch_code": "107",
+  "branch_name_kana": "ｾｲﾘﾖｳ",
+  "deposit_type": "1",
+  "account_number": "<出金口座 7桁>"
+}

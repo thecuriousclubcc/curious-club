@@ -132,9 +132,18 @@ def detect_anomalies(rows: list[InvoiceRow],
 
 
 def aggregate(rows: list[InvoiceRow], payees: dict[str, Payee],
-              *, require_verified: bool = True) -> list[Payment]:
-    """Group invoice rows into one Payment per payee."""
+              *, require_verified: bool = True,
+              route=None, fee_policy=None) -> list[Payment]:
+    """Group invoice rows into one Payment per payee.
+
+    `route` decides how a 先方負担 fee is handled (see zengin.fees); it
+    defaults to the 全銀 file route, which nets the fee here.
+    """
+    from .fees import Route, resolve_amount
     from .model import FEE_BORNE_BY_BENEFICIARY, FEE_BORNE_BY_SENDER
+
+    if route is None:
+        route = Route.ZENGIN
 
     grouped: dict[str, list[InvoiceRow]] = {}
     for r in rows:
@@ -153,7 +162,16 @@ def aggregate(rows: list[InvoiceRow], payees: dict[str, Payee],
                 f"が空です。未確認の口座には振り込めません。")
 
         items = grouped[pid]
-        total = sum(i.amount for i in items)
+        invoice_total = sum(i.amount for i in items)
+        total, fee = resolve_amount(
+            invoice_total, fee_borne_by=p.fee_borne_by, route=route,
+            policy=fee_policy, bank_code=p.bank_code,
+            branch_code=p.branch_code)
+        extra_notes = []
+        if fee:
+            extra_notes.append(
+                f"先方負担: 請求 {invoice_total:,}円 − 手数料 {fee:,}円 "
+                f"= 振込 {total:,}円")
         payments.append(Payment(
             payee_id=pid,
             bank_code=p.bank_code,
@@ -168,6 +186,6 @@ def aggregate(rows: list[InvoiceRow], payees: dict[str, Payee],
                       else FEE_BORNE_BY_SENDER),
             payee_name_display=p.display_name,
             source_documents=[i.source_file for i in items if i.source_file],
-            notes=list(p.conversion_notes),
+            notes=list(p.conversion_notes) + extra_notes,
         ))
     return payments

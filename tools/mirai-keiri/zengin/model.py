@@ -82,7 +82,7 @@ class Payment:
     new_code: str = "0"           # 新規コード (1)
     customer_code_1: str = ""     # 顧客コード1 (10)
     customer_code_2: str = ""     # 顧客コード2 (10)
-    transfer_kind: str = " "      # 振込指定区分 (1)
+    transfer_kind: str = "7"      # 振込指定区分 (1) 7=電信振込（実績値）
     fee_flag: str = FEE_BORNE_BY_SENDER   # 識別表示 (1)
 
     # Provenance - carried into the review sheet, never into the bank file.

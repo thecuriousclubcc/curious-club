@@ -210,9 +210,10 @@ def render(batch: TransferBatch, *, newline: str = "\r\n",
 # ---------------------------------------------------------------------------
 # 1. 手形交換所番号 (data, bytes 39-42): written here as spaces. Some banks
 #    specify zero-fill. If the PDF says "0000", change the field kind to NUM.
-# 2. 振込指定区分 / 識別表示 (data, bytes 112-113): some banks treat 112 as
-#    part of a 2-byte 識別表示 area, some require "7"/"8" in 112. Default here
-#    is space + fee flag, which is the most widely accepted combination.
+# 2. 振込指定区分 (data, byte 112): RESOLVED. The clinic's own 総合振込送信
+#    データ一覧 (2026-08-31 run, 116 件) prints 振込指定区分 = 電信振込 for
+#    every record, so "7" is the value in use. 識別表示 (113) stays the fee
+#    flag. Still worth one glance at the PDF for the 113 byte.
 # 3. 改行 and EOF: CRLF per record by default, no 0x1A EOF byte. If the bank's
 #    uploader rejects the file, the usual culprits are (in order) a trailing
 #    newline, a missing one, or a 0x1A the uploader does not expect.

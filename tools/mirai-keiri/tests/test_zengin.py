@@ -350,3 +350,90 @@ class TestDeterminism(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class TestFeeRouting(unittest.TestCase):
+    """The two FB-Web routes net the 先方負担 fee at different points."""
+
+    def setUp(self):
+        from zengin.fees import FeePolicy
+        self.policy = FeePolicy(same_branch=0, same_bank_other_branch=110,
+                                other_bank=330)
+
+    def test_sender_borne_is_invoice_amount_on_both_routes(self):
+        from zengin.fees import Route, resolve_amount
+        for route in (Route.SCREEN, Route.ZENGIN):
+            amount, fee = resolve_amount(
+                10_000, fee_borne_by="sender", route=route,
+                policy=self.policy, bank_code="0001", branch_code="797")
+            self.assertEqual((amount, fee), (10_000, 0), route)
+
+    def test_screen_route_does_not_net_the_fee(self):
+        from zengin.fees import Route, resolve_amount
+        amount, fee = resolve_amount(
+            10_000, fee_borne_by="beneficiary", route=Route.SCREEN,
+            policy=self.policy, bank_code="0001", branch_code="797")
+        self.assertEqual((amount, fee), (10_000, 0))
+
+    def test_zengin_route_nets_the_fee(self):
+        from zengin.fees import Route, resolve_amount
+        amount, fee = resolve_amount(
+            10_000, fee_borne_by="beneficiary", route=Route.ZENGIN,
+            policy=self.policy, bank_code="0001", branch_code="797")
+        self.assertEqual((amount, fee), (9_670, 330))
+
+    def test_zengin_route_same_branch_is_free(self):
+        from zengin.fees import Route, resolve_amount
+        amount, fee = resolve_amount(
+            10_000, fee_borne_by="beneficiary", route=Route.ZENGIN,
+            policy=self.policy, bank_code="0185", branch_code="107")
+        self.assertEqual((amount, fee), (10_000, 0))
+
+    def test_zengin_route_without_a_fee_table_refuses(self):
+        from zengin.fees import Route, resolve_amount
+        with self.assertRaises(ValidationError) as cm:
+            resolve_amount(10_000, fee_borne_by="beneficiary",
+                           route=Route.ZENGIN, policy=None,
+                           bank_code="0001", branch_code="797")
+        self.assertIn("手数料テーブル", str(cm.exception))
+
+    def test_fee_larger_than_invoice_refuses(self):
+        from zengin.fees import Route, resolve_amount
+        with self.assertRaises(ValidationError):
+            resolve_amount(100, fee_borne_by="beneficiary", route=Route.ZENGIN,
+                           policy=self.policy, bank_code="0001",
+                           branch_code="797")
+
+
+class TestVerifiedAgainstRealRun(unittest.TestCase):
+    """Shape verified against the clinic's own 2026-08-31 総合振込送信データ一覧.
+
+    Identifiers here are REDACTED placeholders with the real field widths.
+    The live 委託者コード and 出金口座 belong in data/requester.json, which
+    is gitignored - they are not committed to this repository.
+    """
+
+    def test_transfer_kind_defaults_to_denshin_furikomi(self):
+        self.assertEqual(make_payment().transfer_kind, "7")
+
+    def test_requester_matches_the_real_header(self):
+        # Real run shape: 依頼人 <10桁> イ)ミライ / 0185 カゴシマ / 支店 107 セイリョウ
+        r = make_requester(consignor_code="2000000000", name_kana="ｲ)ﾐﾗｲ",
+                           bank_code="0185", bank_name_kana="ｶｺﾞｼﾏ",
+                           branch_code="107", branch_name_kana="ｾｲﾘﾖｳ")
+        batch = TransferBatch(requester=r, transfer_date=date(2026, 8, 31),
+                              payments=[make_payment()])
+        rec = build_header(batch).encode("cp932")
+        self.assertEqual(rec[4:14], b"2000000000")
+        self.assertEqual(rec[54:58], b"0831")
+        self.assertEqual(rec[58:62], b"0185")
+        self.assertEqual(rec[77:80], b"107")
+
+    def test_a_116_record_batch_totals_correctly(self):
+        payments = [make_payment(payee_id=f"P{i:03d}", amount=1000 + i)
+                    for i in range(116)]
+        batch = make_batch(payments, transfer_date=date(2026, 8, 31))
+        raw = render(batch)
+        self.assertEqual(verify(raw, expected_count=116), [])
+        trailer = raw.split(b"\r\n")[-3]
+        self.assertEqual(trailer[1:7], b"000116")
