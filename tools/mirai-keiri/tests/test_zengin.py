@@ -474,5 +474,5 @@ class TestCustomerCode(unittest.TestCase):
 
     def test_account_key_is_stable_across_padding(self):
         from zengin.custcode import account_key
-        self.assertEqual(account_key("185", "7", "1", "448666"),
-                         account_key("0185", "007", "1", "0448666"))
+        self.assertEqual(account_key("185", "7", "1", "123456"),
+                         account_key("0185", "007", "1", "0123456"))
