@@ -10,7 +10,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-RECORD_LENGTH = 120
+VERIFY_RECORD_LENGTH = 120  # 意図的な重複: 書き手(format.py)に依存しないため
 
 
 @dataclass
@@ -35,8 +35,8 @@ def _split_records(raw: bytes) -> tuple[list[bytes], list[Problem]]:
         problems.append(Problem("file", "改行が LF です（通常は CRLF）"))
         parts = data.split(b"\n")
     else:
-        parts = [data[i:i + RECORD_LENGTH]
-                 for i in range(0, len(data), RECORD_LENGTH)]
+        parts = [data[i:i + VERIFY_RECORD_LENGTH]
+                 for i in range(0, len(data), VERIFY_RECORD_LENGTH)]
 
     records = [p for p in parts if p]
     return records, problems
@@ -51,7 +51,7 @@ def verify(raw: bytes, *, expected_count: int | None = None,
         return problems + [Problem("file", "レコードがありません")]
 
     for i, rec in enumerate(records, 1):
-        if len(rec) != RECORD_LENGTH:
+        if len(rec) != VERIFY_RECORD_LENGTH:
             problems.append(
                 Problem(f"rec{i}", f"レコード長 {len(rec)} バイト（120でなければなりません）"))
         try:
@@ -111,6 +111,20 @@ def verify(raw: bytes, *, expected_count: int | None = None,
         name = rec[50:80]
         if not name.strip():
             problems.append(Problem(f"data{i}", "受取人名が空です"))
+
+        kind = rec[111:112]
+        if kind not in (b"7", b"8", b" "):
+            problems.append(Problem(
+                f"data{i}", f"振込指定区分が不正 (7=電信/8=文書): {kind!r}"))
+
+        # 識別表示 = EDI情報使用フラグ。手数料負担先ではない。
+        ident = rec[112:113]
+        if ident not in (b"Y", b" "):
+            problems.append(Problem(
+                f"data{i}", f"識別表示は Y か空白のみ: {ident!r}"))
+        if ident == b"Y" and not rec[91:111].strip():
+            problems.append(Problem(
+                f"data{i}", "識別表示=Y ですが EDI情報(92-111)が空です"))
 
     if trailers:
         t = trailers[0]

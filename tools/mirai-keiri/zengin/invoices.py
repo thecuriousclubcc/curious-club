@@ -17,7 +17,7 @@ from pathlib import Path
 from .model import Payment, ValidationError
 from .master import Payee
 
-REQUIRED_COLUMNS = ["payee_id", "invoice_no", "invoice_date",
+INVOICE_COLUMNS = ["payee_id", "invoice_no", "invoice_date",
                     "amount", "source_file"]
 
 
@@ -44,7 +44,7 @@ def load_invoices(path: str | Path) -> list[InvoiceRow]:
     seen: set[tuple[str, str]] = set()
     with path.open(encoding="utf-8-sig", newline="") as fh:
         reader = csv.DictReader(fh)
-        missing = [c for c in REQUIRED_COLUMNS if c not in (reader.fieldnames or [])]
+        missing = [c for c in INVOICE_COLUMNS if c not in (reader.fieldnames or [])]
         if missing:
             raise ValidationError(f"{path}: 必須列がありません: {', '.join(missing)}")
 
@@ -140,7 +140,6 @@ def aggregate(rows: list[InvoiceRow], payees: dict[str, Payee],
     defaults to the 全銀 file route, which nets the fee here.
     """
     from .fees import Route, resolve_amount
-    from .model import FEE_BORNE_BY_BENEFICIARY, FEE_BORNE_BY_SENDER
 
     if route is None:
         route = Route.ZENGIN
@@ -182,8 +181,6 @@ def aggregate(rows: list[InvoiceRow], payees: dict[str, Payee],
             account_number=p.account_number,
             payee_name_kana=p.payee_name_kana,
             amount=total,
-            fee_flag=(FEE_BORNE_BY_BENEFICIARY if p.fee_borne_by == "beneficiary"
-                      else FEE_BORNE_BY_SENDER),
             payee_name_display=p.display_name,
             source_documents=[i.source_file for i in items if i.source_file],
             notes=list(p.conversion_notes) + extra_notes,

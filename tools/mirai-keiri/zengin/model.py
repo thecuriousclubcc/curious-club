@@ -31,9 +31,15 @@ TRANSFER_KINDS = {
     " ": "指定なし",
 }
 
-# 識別表示 - fee borne by the beneficiary.
-FEE_BORNE_BY_BENEFICIARY = "Y"
-FEE_BORNE_BY_SENDER = " "
+# 識別表示 (data record byte 113).
+#   "Y"   = EDI情報を使用する。このとき項番12・13（顧客コード1・2, bytes
+#           92-111）は 20桁の EDI情報として再解釈される。
+#   space = EDI情報を使用しない。項番12・13は顧客コードのまま。
+# 手数料負担先はこの項目ではない。全銀フォーマットに振込手数料の項目は
+# 存在せず、先方負担はアップロード画面側で指定し、ファイル内の全明細に
+# 一括適用される（FB-Web 外部ファイル送信も同様）。
+EDI_IN_USE = "Y"
+EDI_NOT_USED = " "
 
 
 class ValidationError(ValueError):
@@ -83,7 +89,7 @@ class Payment:
     customer_code_1: str = ""     # 顧客コード1 (10)
     customer_code_2: str = ""     # 顧客コード2 (10)
     transfer_kind: str = "7"      # 振込指定区分 (1) 7=電信振込（実績値）
-    fee_flag: str = FEE_BORNE_BY_SENDER   # 識別表示 (1)
+    edi_info: str = ""            # 識別表示="Y" のとき 顧客コード欄に入る20桁
 
     # Provenance - carried into the review sheet, never into the bank file.
     payee_name_display: str = ""
@@ -118,9 +124,20 @@ class Payment:
         if self.transfer_kind not in TRANSFER_KINDS:
             raise ValidationError(
                 f"{self.payee_id}: 振込指定区分が不正: {self.transfer_kind!r}")
-        if self.fee_flag not in (FEE_BORNE_BY_BENEFICIARY, FEE_BORNE_BY_SENDER):
-            raise ValidationError(
-                f"{self.payee_id}: 識別表示が不正: {self.fee_flag!r}")
+        if self.edi_info:
+            if self.customer_code_1 or self.customer_code_2:
+                raise ValidationError(
+                    f"{self.payee_id}: EDI情報と顧客コードは同じ領域(92-111)を"
+                    f"使うため併用できません。どちらか一方にしてください。")
+            if len(self.edi_info.encode("cp932")) > 20:
+                raise ValidationError(
+                    f"{self.payee_id}: EDI情報が20桁を超えています: "
+                    f"{self.edi_info!r}")
+
+    @property
+    def identifier(self) -> str:
+        """識別表示 (byte 113)."""
+        return EDI_IN_USE if self.edi_info else EDI_NOT_USED
 
 
 @dataclass

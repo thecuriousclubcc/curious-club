@@ -160,10 +160,11 @@ def build_data(p) -> str:
         "受取人名": p.payee_name_kana,
         "振込金額": str(p.amount),
         "新規コード": p.new_code,
-        "顧客コード1": p.customer_code_1,
-        "顧客コード2": p.customer_code_2,
+        # 識別表示="Y" のとき 92-111 は EDI情報。それ以外は顧客コード1・2。
+        "顧客コード1": (p.edi_info[:10] if p.edi_info else p.customer_code_1),
+        "顧客コード2": (p.edi_info[10:20] if p.edi_info else p.customer_code_2),
         "振込指定区分": p.transfer_kind,
-        "識別表示": p.fee_flag,
+        "識別表示": p.identifier,
         "ダミー": "",
     })
 
@@ -212,8 +213,11 @@ def render(batch: TransferBatch, *, newline: str = "\r\n",
 #    specify zero-fill. If the PDF says "0000", change the field kind to NUM.
 # 2. 振込指定区分 (data, byte 112): RESOLVED. The clinic's own 総合振込送信
 #    データ一覧 (2026-08-31 run, 116 件) prints 振込指定区分 = 電信振込 for
-#    every record, so "7" is the value in use. 識別表示 (113) stays the fee
-#    flag. Still worth one glance at the PDF for the 113 byte.
+#    every record, so "7" is the value in use ("8" = 文書振込).
+#    識別表示 (byte 113): RESOLVED, and it is NOT a fee flag - "Y" means
+#    EDI情報を使用する, which re-purposes bytes 92-111 as a 20-digit EDI
+#    field. 全銀フォーマットには振込手数料の項目がない: 先方負担は
+#    アップロード画面で指定し、ファイル内の全明細に一括適用される.
 # 3. 改行 and EOF: CRLF per record by default, no 0x1A EOF byte. If the bank's
 #    uploader rejects the file, the usual culprits are (in order) a trailing
 #    newline, a missing one, or a 0x1A the uploader does not expect.

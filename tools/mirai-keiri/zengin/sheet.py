@@ -12,7 +12,7 @@ from __future__ import annotations
 from datetime import date
 
 from .invoices import Anomaly, InvoiceRow
-from .model import DEPOSIT_TYPES, FEE_BORNE_BY_BENEFICIARY, TransferBatch
+from .model import DEPOSIT_TYPES, TransferBatch
 from .xlsx import (STYLE_HEADER, STYLE_YEN, STYLE_YEN_BOLD, write_xlsx)
 
 HEADERS = [
@@ -61,7 +61,8 @@ def build_rows(batch: TransferBatch, invoices: list[InvoiceRow],
             p.payee_name_kana,
             len(p.payee_name_kana.encode("cp932")),
             p.amount,
-            "先方負担" if p.fee_flag == FEE_BORNE_BY_BENEFICIARY else "当方負担",
+            next((n.split(":")[0] for n in p.notes if n.startswith("先方負担")),
+                 "当方負担"),
             len(items),
             " / ".join(sorted({r.source_file for r in items if r.source_file})),
             " / ".join(note_parts),

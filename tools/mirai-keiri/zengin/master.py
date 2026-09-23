@@ -16,7 +16,7 @@ from pathlib import Path
 from .kana import KanaError, to_zengin_kana
 from .model import DEPOSIT_TYPES, ValidationError
 
-REQUIRED_COLUMNS = [
+PAYEE_COLUMNS = [
     "payee_id", "display_name", "bank_code", "bank_name_kana",
     "branch_code", "branch_name_kana", "deposit_type", "account_number",
     "payee_name_kana", "fee_borne_by", "verified_on", "verified_by",
@@ -48,7 +48,7 @@ def load_payees(path: str | Path) -> dict[str, Payee]:
     path = Path(path)
     with path.open(encoding="utf-8-sig", newline="") as fh:
         reader = csv.DictReader(fh)
-        missing = [c for c in REQUIRED_COLUMNS if c not in (reader.fieldnames or [])]
+        missing = [c for c in PAYEE_COLUMNS if c not in (reader.fieldnames or [])]
         if missing:
             raise ValidationError(
                 f"{path}: 必須列がありません: {', '.join(missing)}")

@@ -352,6 +352,44 @@ if __name__ == "__main__":
     unittest.main()
 
 
+class TestIdentifierIsEdiNotFee(unittest.TestCase):
+    """識別表示 (byte 113) = EDI情報使用フラグ。手数料負担先ではない。"""
+
+    def test_default_identifier_is_space(self):
+        rec = build_data(make_payment()).encode("cp932")
+        self.assertEqual(rec[112:113], b" ")
+
+    def test_beneficiary_borne_fee_does_not_set_byte_113(self):
+        # 先方負担でも 識別表示 は立たない。全銀に手数料の項目はない。
+        p = make_payment()
+        rec = build_data(p).encode("cp932")
+        self.assertEqual(rec[112:113], b" ")
+
+    def test_edi_sets_identifier_and_occupies_customer_code_area(self):
+        p = make_payment(edi_info="12345678901234567890")
+        rec = build_data(p).encode("cp932")
+        self.assertEqual(rec[112:113], b"Y")
+        self.assertEqual(rec[91:111], b"12345678901234567890")
+
+    def test_edi_and_customer_code_cannot_coexist(self):
+        p = make_payment(edi_info="123", customer_code_1="0000000480")
+        with self.assertRaises(ValidationError) as cm:
+            p.validate()
+        self.assertIn("併用できません", str(cm.exception))
+
+    def test_customer_code_area_holds_codes_when_no_edi(self):
+        p = make_payment(customer_code_1="0000000480",
+                         customer_code_2="0000000481")
+        rec = build_data(p).encode("cp932")
+        self.assertEqual(rec[91:101], b"0000000480")
+        self.assertEqual(rec[101:111], b"0000000481")
+        self.assertEqual(rec[112:113], b" ")
+
+    def test_edi_over_20_digits_raises(self):
+        with self.assertRaises(ValidationError):
+            make_payment(edi_info="1" * 21).validate()
+
+
 class TestFeeRouting(unittest.TestCase):
     """The two FB-Web routes net the 先方負担 fee at different points."""
 
