@@ -38,6 +38,9 @@ class Payee:
     verified_on: date | None
     verified_by: str
     conversion_notes: list[str]
+    # FB-Web 受取人マスタの顧客コード。28.4%が空欄なので既定は空。
+    customer_code_1: str = ""
+    customer_code_2: str = ""
 
     @property
     def is_verified(self) -> bool:
@@ -106,6 +109,8 @@ def load_payees(path: str | Path) -> dict[str, Payee]:
                 account_number=(row["account_number"] or "").strip(),
                 payee_name_kana=converted.text,
                 fee_borne_by=fee,
+                customer_code_1=(row.get("customer_code_1") or "").strip(),
+                customer_code_2=(row.get("customer_code_2") or "").strip(),
                 verified_on=verified_on,
                 verified_by=(row["verified_by"] or "").strip(),
                 conversion_notes=notes,

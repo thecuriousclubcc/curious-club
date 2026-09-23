@@ -514,3 +514,66 @@ class TestCustomerCode(unittest.TestCase):
         from zengin.custcode import account_key
         self.assertEqual(account_key("185", "7", "1", "123456"),
                          account_key("0185", "007", "1", "0123456"))
+
+
+class TestAmountSource(unittest.TestCase):
+    """金額取込CSVの素材。列仕様が未確定でも突合材料は全部持たせる。"""
+
+    def _batch(self):
+        from zengin.invoices import InvoiceRow, aggregate
+        from zengin.master import Payee
+        payees = {}
+        for pid, c1 in (("P001", "0000000480"), ("P002", "9387"), ("P003", "")):
+            payees[pid] = Payee(
+                payee_id=pid, display_name=f"テスト{pid}",
+                bank_code="0185", bank_name_kana="ｶｺﾞｼﾏ",
+                branch_code="201", branch_name_kana="ﾃﾝﾓﾝｶﾝ",
+                deposit_type="1", account_number="7654321",
+                payee_name_kana="ｶ)ﾃｽﾄ", fee_borne_by="sender",
+                customer_code_1=c1, customer_code_2="",
+                verified_on=date(2026, 9, 1), verified_by="中村",
+                conversion_notes=[])
+        rows = [InvoiceRow(pid, f"{pid}-1", date(2026, 10, 1), 1000, "a.pdf")
+                for pid in payees]
+        return make_batch(aggregate(rows, payees)), payees
+
+    def test_short_and_long_codes_both_normalise_in_output(self):
+        import csv, io, tempfile, os
+        from zengin.amounts import write_amount_source
+        batch, payees = self._batch()
+        with tempfile.TemporaryDirectory() as d:
+            path = os.path.join(d, "a.csv")
+            write_amount_source(path, batch, payees, {"P001": 1, "P002": 1, "P003": 1})
+            with open(path, encoding="cp932", newline="") as fh:
+                rows = list(csv.DictReader(fh))
+        by_id = {r["payee_id"]: r for r in rows}
+        self.assertEqual(by_id["P001"]["顧客コード1_10桁"], "0000000480")
+        self.assertEqual(by_id["P002"]["顧客コード1_10桁"], "0000009387")
+        self.assertEqual(by_id["P002"]["顧客コード1_原文"], "9387")
+        # 空欄は空欄のまま。勝手に埋めない。
+        self.assertEqual(by_id["P003"]["顧客コード1_10桁"], "")
+
+    def test_account_key_present_for_every_row(self):
+        import csv, tempfile, os
+        from zengin.amounts import write_amount_source
+        batch, payees = self._batch()
+        with tempfile.TemporaryDirectory() as d:
+            path = os.path.join(d, "a.csv")
+            write_amount_source(path, batch, payees, {})
+            with open(path, encoding="cp932", newline="") as fh:
+                rows = list(csv.DictReader(fh))
+        # 顧客コードが無い先でも突合キーは必ずある（案A）
+        for r in rows:
+            self.assertTrue(r["口座自然キー"])
+            self.assertEqual(len(r["口座自然キー"].split("-")), 4)
+
+    def test_amounts_match_the_zengin_file(self):
+        import csv, tempfile, os
+        from zengin.amounts import write_amount_source
+        batch, payees = self._batch()
+        with tempfile.TemporaryDirectory() as d:
+            path = os.path.join(d, "a.csv")
+            write_amount_source(path, batch, payees, {})
+            with open(path, encoding="cp932", newline="") as fh:
+                total = sum(int(r["金額"]) for r in csv.DictReader(fh))
+        self.assertEqual(total, batch.total_amount)

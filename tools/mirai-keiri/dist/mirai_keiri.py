@@ -777,6 +777,9 @@ class Payee:
     verified_on: date | None
     verified_by: str
     conversion_notes: list[str]
+    # FB-Web 受取人マスタの顧客コード。28.4%が空欄なので既定は空。
+    customer_code_1: str = ""
+    customer_code_2: str = ""
 
     @property
     def is_verified(self) -> bool:
@@ -845,6 +848,8 @@ def load_payees(path: str | Path) -> dict[str, Payee]:
                 account_number=(row["account_number"] or "").strip(),
                 payee_name_kana=converted.text,
                 fee_borne_by=fee,
+                customer_code_1=(row.get("customer_code_1") or "").strip(),
+                customer_code_2=(row.get("customer_code_2") or "").strip(),
                 verified_on=verified_on,
                 verified_by=(row["verified_by"] or "").strip(),
                 conversion_notes=notes,
@@ -1451,6 +1456,8 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--route", default="zengin", choices=["zengin", "screen"],
                     help="zengin=外部ファイル送信 / screen=データ登録(金額外部取込)")
     ap.add_argument("--fees", help="手数料テーブル JSON (先方負担がある場合に必須)")
+    ap.add_argument("--emit-amounts", action="store_true",
+                    help="金額取込用CSVの素材を出力（列仕様確定前の中間成果物）")
     ap.add_argument("--allow-unverified", action="store_true",
                     help="口座未確認の支払先を許可（通常は使わない）")
     args = ap.parse_args(argv)
@@ -1505,6 +1512,14 @@ def main(argv: list[str] | None = None) -> int:
 
     zengin_path.write_bytes(raw)
     write_review_sheet(str(sheet_path), batch, invoices, anomalies)
+
+    if args.emit_amounts:
+        counts: dict[str, int] = {}
+        for r in invoices:
+            counts[r.payee_id] = counts.get(r.payee_id, 0) + 1
+        amounts_path = out_dir / f"金額取込素材_{stamp}.csv"
+        write_amount_source(amounts_path, batch, payees, counts)
+        print(f"金額取込素材: {amounts_path}  ※列仕様は現場で確定させること")
 
     print(f"振込一覧表: {sheet_path}")
     print(f"全銀ファイル: {zengin_path} ({len(raw)} バイト)")
