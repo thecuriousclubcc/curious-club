@@ -437,3 +437,42 @@ class TestVerifiedAgainstRealRun(unittest.TestCase):
         self.assertEqual(verify(raw, expected_count=116), [])
         trailer = raw.split(b"\r\n")[-3]
         self.assertEqual(trailer[1:7], b"000116")
+
+
+class TestCustomerCode(unittest.TestCase):
+    """実データの 10桁/4桁 混在に耐えること。"""
+
+    def test_short_code_pads_to_ten(self):
+        from zengin.custcode import normalize
+        self.assertEqual(normalize("9387"), "0000009387")
+
+    def test_already_ten_digits_is_unchanged(self):
+        from zengin.custcode import normalize
+        self.assertEqual(normalize("0000000480"), "0000000480")
+
+    def test_mixed_width_codes_match_after_normalising(self):
+        from zengin.custcode import same
+        self.assertTrue(same("9387", "0000009387"))
+        self.assertTrue(same("2619", "0000002619"))
+
+    def test_blank_never_matches_blank(self):
+        # 28.4% の先が空欄。空欄同士を一致とみなすと誤送金になる。
+        from zengin.custcode import same
+        self.assertFalse(same("", ""))
+        self.assertFalse(same(None, None))
+        self.assertFalse(same("", "0000000010"))
+
+    def test_non_numeric_code_raises(self):
+        from zengin.custcode import normalize
+        with self.assertRaises(ValidationError):
+            normalize("A123")
+
+    def test_overlong_code_raises(self):
+        from zengin.custcode import normalize
+        with self.assertRaises(ValidationError):
+            normalize("12345678901")
+
+    def test_account_key_is_stable_across_padding(self):
+        from zengin.custcode import account_key
+        self.assertEqual(account_key("185", "7", "1", "448666"),
+                         account_key("0185", "007", "1", "0448666"))
