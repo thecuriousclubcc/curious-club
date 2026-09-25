@@ -14,7 +14,7 @@ from .model import ValidationError
 WIDTH = 10
 
 
-def normalize(code: str | None, *, width: int = WIDTH) -> str:
+def normalize_code(code: str | None, *, width: int = WIDTH) -> str:
     """'9387' -> '0000009387'. 空欄は空文字のまま返す（照合不能の印）。"""
     if code is None:
         return ""
@@ -30,7 +30,7 @@ def normalize(code: str | None, *, width: int = WIDTH) -> str:
 
 def same(a: str | None, b: str | None) -> bool:
     """両方に値があり、正規化後に一致したときだけ True。空欄は一致扱いしない。"""
-    na, nb = normalize(a), normalize(b)
+    na, nb = normalize_code(a), normalize_code(b)
     return bool(na) and na == nb
 
 

@@ -12,18 +12,26 @@
 
 from __future__ import annotations
 
+from collections import Counter
 from dataclasses import dataclass
 from dataclasses import dataclass, field
 from datetime import date
 from datetime import date, datetime
 from datetime import datetime
+from decimal import Decimal
 from enum import Enum
 from pathlib import Path
+from typing import Protocol
 from xml.sax.saxutils import escape
 import argparse
 import csv
 import json
+import re
+import shutil
+import statistics
+import subprocess
 import sys
+import tempfile
 import zipfile
 
 
@@ -403,7 +411,7 @@ def byte_length(text: str) -> int:
 WIDTH = 10
 
 
-def normalize(code: str | None, *, width: int = WIDTH) -> str:
+def normalize_code(code: str | None, *, width: int = WIDTH) -> str:
     """'9387' -> '0000009387'. 空欄は空文字のまま返す（照合不能の印）。"""
     if code is None:
         return ""
@@ -419,7 +427,7 @@ def normalize(code: str | None, *, width: int = WIDTH) -> str:
 
 def same(a: str | None, b: str | None) -> bool:
     """両方に値があり、正規化後に一致したときだけ True。空欄は一致扱いしない。"""
-    na, nb = normalize(a), normalize(b)
+    na, nb = normalize_code(a), normalize_code(b)
     return bool(na) and na == nb
 
 
@@ -428,6 +436,91 @@ def account_key(bank_code: str, branch_code: str, deposit_type: str,
     """口座の自然キー。顧客コードが未整備の先でも必ず引ける（案A）。"""
     return (bank_code.strip().zfill(4), branch_code.strip().zfill(3),
             deposit_type.strip(), account_number.strip().zfill(7))
+
+
+# ===== tnumber.py =====================================================
+"""適格請求書発行事業者登録番号（T + 法人番号13桁）の取り扱い。
+
+用途は**取引先マスタの照合キー**。国税庁への問い合わせは行わない。
+院内は閉鎖環境でネットに出られないし、取引先は概ね固定で新規は稀なので、
+自前のマスタに登録しておけば完全一致で引ける。
+
+ただし1つ強い性質がある: 法人番号には検査用数字（チェックディジット）が
+先頭1桁に入っているため、**ネットなしで番号の妥当性を判定できる**。
+OCRが1桁読み違えた番号は、照合する前にここで弾ける。
+
+  検査用数字 = 9 −( Σ(n=1..12) Pn × Qn ) mod 9
+    Pn: 法人番号の下12桁を最下位から数えた n 桁目の数字
+    Qn: n が奇数なら 1、偶数なら 2
+  （国税庁 法人番号システム 仕様）
+"""
+
+
+
+
+PATTERN = re.compile(r"^T?(\d{13})$")
+
+
+def check_digit(body12: str) -> int:
+    """下12桁から検査用数字を計算する。"""
+    total = 0
+    for n, ch in enumerate(reversed(body12), start=1):
+        total += int(ch) * (1 if n % 2 else 2)
+    return 9 - (total % 9)
+
+
+def is_valid(number: str) -> bool:
+    """T番号として整合しているか。ネットアクセスなしで判定する。"""
+    try:
+        normalize_tnumber(number)
+        return True
+    except ValidationError:
+        return False
+
+
+def normalize_tnumber(number: str) -> str:
+    """'t9310001000026' や全角混じりを 'T9310001000026' に整える。
+
+    桁数・数字・検査用数字のいずれかが合わなければ例外。
+    読み取り誤りを黙って通さない。
+    """
+    if number is None:
+        raise ValidationError("登録番号が空です")
+
+    s = str(number).strip().upper()
+    # 全角→半角、区切り記号の除去
+    s = s.translate(str.maketrans(
+        "０１２３４５６７８９Ｔ", "0123456789T"))
+    s = s.replace("-", "").replace("‐", "").replace("－", "")
+    s = s.replace(" ", "").replace("　", "")
+
+    m = PATTERN.match(s)
+    if not m:
+        raise ValidationError(
+            f"登録番号の形式が不正です（T＋13桁の数字）: {number!r}")
+
+    digits = m.group(1)
+    want = check_digit(digits[1:])
+    got = int(digits[0])
+    if got != want:
+        raise ValidationError(
+            f"登録番号の検査用数字が合いません: {number!r} "
+            f"(先頭 {got} / 計算 {want})。読み取り誤りの可能性があります。")
+    return "T" + digits
+
+
+def match(read_number: str, master: dict[str, str]) -> str | None:
+    """読み取った登録番号から payee_id を引く。完全一致のみ。
+
+    master: {正規化済みT番号: payee_id}
+    見つからなければ None を返す（＝新規取引先。人に回す）。
+    推測による部分一致は行わない。
+    """
+    try:
+        key = normalize_tnumber(read_number)
+    except ValidationError:
+        return None
+    return master.get(key)
 
 
 # ===== fees.py ========================================================
@@ -519,6 +612,314 @@ def resolve_amount(invoice_total: int, *, fee_borne_by: str, route: Route,
             f"請求額 {invoice_total:,}円 から手数料 {fee:,}円 を引くと "
             f"{net:,}円 になります。先方負担の設定を確認してください。")
     return net, fee
+
+
+# ===== reconcile.py ===================================================
+"""請求書の自己検算。
+
+請求書に書かれた数字は互いに整合している。読み取り手（OCR・LLM・人）が
+何であっても、読んだ結果が正しいかは**計算で判定できる**。
+
+    繰越額     = 前回御請求額 − 御入金額
+    今回合計額 = 今回御買上額 + 今回消費税額
+    今回御請求額 = 繰越額 + 今回合計金額
+    今回消費税額 ≈ 今回御買上額 × 税率
+
+この検算に通らない読み取りは、読み手が誰であれ採用しない。
+**読み取り器は提案するだけで、合否はここが決める。**
+
+これにより、抽出に OCR を使おうとローカルLLMを使おうと、誤った金額が
+振込データに入る経路がなくなる。LLMを使う場合でも、LLMは
+「どの数字がどの項目か」を提案するだけで、最終判断は持たない。
+"""
+
+
+
+
+
+@dataclass
+class InvoiceFigures:
+    """請求書の表から読み取った数字。すべて整数（円）。
+
+    読み取れなかった項目は None。None の項目に関わる検算は
+    「検算できない」として扱い、勝手に補完しない。
+    """
+
+    previous_billed: int | None = None    # 前回御請求額
+    payment_received: int | None = None   # 御入金額
+    carried_over: int | None = None       # 繰越額
+    purchases: int | None = None          # 今回御買上額
+    tax: int | None = None                # 今回消費税額
+    subtotal: int | None = None           # 今回合計金額
+    total_billed: int | None = None       # 今回御請求額  ← 実際に払う額
+
+    source_file: str = ""
+    read_by: str = ""                     # "ocr" / "llm" / "manual" など
+    line_items_total: int | None = None   # 明細の金額合計（取れた場合）
+
+
+@dataclass
+class ReconcileResult:
+    ok: bool
+    checked: list[str] = field(default_factory=list)
+    skipped: list[str] = field(default_factory=list)
+    failures: list[str] = field(default_factory=list)
+
+    corroborated: bool = False   # 支払額が検算で裏取りされたか
+
+    @property
+    def payable(self) -> bool:
+        """自動で先に進めてよいか。
+
+        不整合がないだけでは足りない。**支払額そのものが少なくとも1つの
+        検算で裏取りされていること**を要求する。読み取れた項目が少ないと
+        検算は「できない(skipped)」になるが、それは「合格」ではない。
+        1回しか読んでいない数字をそのまま振り込むのが一番危ない。
+        """
+        return self.ok and not self.failures and self.corroborated
+
+
+def reconcile(f: InvoiceFigures, *, tax_rate: str = "0.10",
+              tax_tolerance: int = 1) -> ReconcileResult:
+    """請求書内部の整合をとる。
+
+    tax_tolerance: 消費税の端数処理（切捨/四捨五入）が業者ごとに違うため、
+    ±1円までは許容する。2円以上ずれたら読み取り誤りとみなす。
+    """
+    checked: list[str] = []
+    skipped: list[str] = []
+    failures: list[str] = []
+
+    def check(label: str, got, want) -> None:
+        if got is None or want is None:
+            skipped.append(label)
+            return
+        checked.append(label)
+        if got != want:
+            failures.append(f"{label}: 記載 {got:,} ≠ 計算 {want:,} "
+                            f"(差 {got - want:+,})")
+
+    # 繰越額 = 前回御請求額 − 御入金額
+    if f.previous_billed is not None and f.payment_received is not None:
+        check("繰越額", f.carried_over, f.previous_billed - f.payment_received)
+    else:
+        skipped.append("繰越額")
+
+    # 今回合計金額 = 今回御買上額 + 今回消費税額
+    if f.purchases is not None and f.tax is not None:
+        check("今回合計金額", f.subtotal, f.purchases + f.tax)
+    else:
+        skipped.append("今回合計金額")
+
+    # 今回御請求額 = 繰越額 + 今回合計金額
+    corroborated = False
+    if f.carried_over is not None and f.subtotal is not None:
+        before = len(failures)
+        check("今回御請求額", f.total_billed, f.carried_over + f.subtotal)
+        if f.total_billed is not None and len(failures) == before:
+            corroborated = True
+    else:
+        skipped.append("今回御請求額")
+
+    # 裏取りの代替経路: 繰越が読めなくても 買上+税 と一致すれば認める
+    # （繰越0の請求書ではこちらが効く）
+    if (not corroborated and f.total_billed is not None
+            and f.purchases is not None and f.tax is not None
+            and f.carried_over in (0, None)):
+        if f.total_billed == f.purchases + f.tax:
+            checked.append("今回御請求額(買上+税との一致)")
+            corroborated = True
+
+    # 消費税 ≈ 買上額 × 税率（端数処理の差は許容）
+    if f.purchases is not None and f.tax is not None:
+        expected = int(Decimal(f.purchases) * Decimal(tax_rate))
+        checked.append("消費税率")
+        if abs(f.tax - expected) > tax_tolerance:
+            failures.append(
+                f"消費税率: 記載 {f.tax:,} ≠ {f.purchases:,}×{tax_rate} "
+                f"≈ {expected:,} (差 {f.tax - expected:+,})")
+    else:
+        skipped.append("消費税率")
+
+    # 明細合計 = 今回御買上額
+    if f.line_items_total is not None and f.purchases is not None:
+        check("明細合計", f.line_items_total, f.purchases)
+    else:
+        skipped.append("明細合計")
+
+    # 実際に払う額が取れていなければ、そもそも先へ進めない。
+    if f.total_billed is None:
+        failures.append("今回御請求額が読み取れていません")
+    elif f.total_billed < 0:
+        failures.append(f"今回御請求額が負です: {f.total_billed:,}")
+
+    if f.total_billed is not None and not corroborated:
+        failures.append(
+            "今回御請求額を裏取りできませんでした（他の欄が読めていないため"
+            "検算が成立しない）。1回しか読めていない金額は採用しません。")
+
+    return ReconcileResult(ok=not failures, checked=checked, skipped=skipped,
+                           failures=failures, corroborated=corroborated)
+
+
+def accept_or_raise(f: InvoiceFigures, **kw) -> int:
+    """検算に通れば支払額を返す。通らなければ止める。
+
+    読み取り器が OCR でもLLMでも人でも、通る条件は同じ。
+    読み手を信用するのではなく、数字の整合を信用する。
+    """
+    r = reconcile(f, **kw)
+    if not r.payable:
+        detail = "; ".join(r.failures)
+        raise ValidationError(
+            f"{f.source_file or '請求書'}: 検算が合いません（読み取り={f.read_by or '不明'}）"
+            f" — {detail}。人が確認してください。")
+    return f.total_billed  # type: ignore[return-value]
+
+
+# ===== history.py =====================================================
+"""支払履歴にもとづく異常検知（2σ）。
+
+目的は「読み取りが正しいか」ではなく「**いつもと違わないか**」を見ること。
+検算（reconcile.py）が捕まえるのは請求書の中で辻褄が合わない誤りだけで、
+請求書そのものが正しくても金額が普段と桁違い、という事態は捕まえられない。
+そこを履歴で見る。
+
+小標本での注意:
+  - 平均±2σ は外れ値に弱い。過去に1回大きな支払があると σ が膨らみ、
+    その後の異常を隠してしまう。そこで **中央値＋MAD** による頑健な判定も
+    併走させ、**どちらかが反応したら人に回す**。
+  - n<3 では統計が成り立たない。「履歴不足」として必ず人に回す。
+  - 毎回同額の先（家賃・リース等）は σ=0 になる。この場合は
+    「前回と違うこと自体」を異常として扱う。
+
+判定は**止めない**。振込一覧表に印をつけて、承認者の目を向けさせるだけ。
+"""
+
+
+
+MIN_SAMPLES = 3
+DEFAULT_SIGMA = 2.0
+# 中央値絶対偏差を標準偏差に合わせるための定数（正規分布のとき）
+MAD_TO_SIGMA = 1.4826
+
+
+@dataclass
+class Assessment:
+    payee_id: str
+    amount: int
+    verdict: str                      # "ok" / "review"
+    reasons: list[str] = field(default_factory=list)
+    stats: dict = field(default_factory=dict)
+
+    @property
+    def needs_review(self) -> bool:
+        return self.verdict == "review"
+
+
+class History:
+    """支払先ごとの過去の支払額。
+
+    データの出所は運用で決める（振込一覧表の印刷、会計ソフト、通帳等）。
+    **総合振込送信データ一覧には金額の列が無い**ため、そこからは作れない。
+    """
+
+    def __init__(self, data: dict[str, list[int]] | None = None):
+        self._data: dict[str, list[int]] = {
+            k: [int(x) for x in v] for k, v in (data or {}).items()}
+
+    @classmethod
+    def load(cls, path: str | Path) -> "History":
+        p = Path(path)
+        if not p.exists():
+            return cls({})
+        return cls(json.loads(p.read_text(encoding="utf-8")))
+
+    def save(self, path: str | Path) -> None:
+        Path(path).write_text(
+            json.dumps(self._data, ensure_ascii=False, indent=2) + "\n",
+            encoding="utf-8")
+
+    def amounts(self, payee_id: str) -> list[int]:
+        return list(self._data.get(payee_id, []))
+
+    def append(self, payee_id: str, amount: int, *, keep: int = 24) -> None:
+        """確定した支払を履歴に足す。直近 keep 件だけ残す。"""
+        if not isinstance(amount, int) or isinstance(amount, bool):
+            raise TypeError("金額は整数（円）で渡してください")
+        xs = self._data.setdefault(payee_id, [])
+        xs.append(amount)
+        del xs[:-keep]
+
+    def assess(self, payee_id: str, amount: int, *,
+               sigma: float = DEFAULT_SIGMA,
+               min_absolute_yen: int = 0) -> Assessment:
+        past = self.amounts(payee_id)
+        reasons: list[str] = []
+        stats: dict = {"n": len(past)}
+
+        if not past:
+            return Assessment(payee_id, amount, "review",
+                              [f"初回の支払先です（{amount:,}円）"], stats)
+
+        if len(past) < MIN_SAMPLES:
+            return Assessment(
+                payee_id, amount, "review",
+                [f"履歴が{len(past)}件しかなく統計判定ができません"
+                 f"（今回 {amount:,}円 / 過去 "
+                 f"{', '.join(f'{x:,}' for x in past)}）"], stats)
+
+        mean = statistics.fmean(past)
+        median = statistics.median(past)
+        sd = statistics.stdev(past)          # 標本標準偏差
+        stats.update(mean=mean, median=median, sd=sd)
+
+        diff = amount - median
+        if abs(diff) < min_absolute_yen:
+            return Assessment(payee_id, amount, "ok", [], stats)
+
+        # 毎回同額だった先
+        if sd == 0:
+            if amount != past[-1]:
+                reasons.append(
+                    f"毎回同額（{past[-1]:,}円）でしたが今回 {amount:,}円 です"
+                    f"（{diff:+,}円）")
+            return Assessment(payee_id, amount,
+                              "review" if reasons else "ok", reasons, stats)
+
+        # 平均±2σ
+        z = (amount - mean) / sd
+        stats["z"] = z
+        if abs(z) >= sigma:
+            direction = "高い" if z > 0 else "低い"
+            reasons.append(
+                f"過去平均 {mean:,.0f}円（σ={sd:,.0f}）に対し今回 {amount:,}円 — "
+                f"{abs(z):.1f}σ {direction}（{amount - mean:+,.0f}円）")
+
+        # 中央値＋MAD（外れ値に強い判定）
+        mad = statistics.median([abs(x - median) for x in past])
+        stats["mad"] = mad
+        if mad > 0:
+            rz = (amount - median) / (mad * MAD_TO_SIGMA)
+            stats["robust_z"] = rz
+            if abs(rz) >= sigma and not reasons:
+                direction = "高い" if rz > 0 else "低い"
+                reasons.append(
+                    f"中央値 {median:,.0f}円 から {abs(rz):.1f}σ 相当 {direction}"
+                    f"（今回 {amount:,}円 / {diff:+,}円）"
+                    f"— 過去の大きな支払で平均がぶれているため中央値で判定")
+        elif amount != median:
+            reasons.append(
+                f"過去はほぼ {median:,.0f}円 で一定でしたが今回 {amount:,}円 です"
+                f"（{diff:+,}円）")
+
+        return Assessment(payee_id, amount,
+                          "review" if reasons else "ok", reasons, stats)
+
+
+def assess_batch(payments, history: History, **kw) -> list[Assessment]:
+    """バッチ全体を判定する。ok のものも返す（件数を数えたいため）。"""
+    return [history.assess(p.payee_id, p.amount, **kw) for p in payments]
 
 
 # ===== format.py ======================================================
@@ -833,7 +1234,7 @@ def load_payees(path: str | Path) -> dict[str, Payee]:
             reg = ""
             if reg_raw:
                 try:
-                    reg = _norm_t(reg_raw)
+                    reg = normalize_tnumber(reg_raw)
                 except ValidationError as e:
                     raise ValidationError(f"{path}:{lineno}: {pid}: {e}") from e
 
@@ -1062,6 +1463,363 @@ def aggregate(rows: list[InvoiceRow], payees: dict[str, Payee],
     return payments
 
 
+# ===== amounts.py =====================================================
+"""金額取込用CSVの「素材」を出す。
+
+FB-Web の［金額外部取込］が要求するCSVの列仕様は**まだ不明**（ONSITE.md ②）。
+仕様が分かる前に列順を決め打ちするのは推測なので、ここではやらない。
+
+代わりに、**照合キーになりうる列を全部持った1枚**を出す。現場で本物の仕様が
+判明したら、必要な列を抜いて並べ替えるだけで取込用CSVになる。
+データを作り直す必要はなく、作業は列の選択と並べ替えに閉じる。
+
+列:
+    payee_id, 顧客コード1(10桁正規化), 顧客コード1(原文), 顧客コード2,
+    金融機関コード, 支店コード, 預金種目, 口座番号, 受取人名カナ,
+    金額, 手数料負担先, 請求書件数, 突合キー(口座自然キー)
+"""
+
+
+
+
+AMOUNT_SOURCE_HEADERS = [
+    "payee_id",
+    "顧客コード1_10桁",
+    "顧客コード1_原文",
+    "顧客コード2_10桁",
+    "金融機関コード",
+    "支店コード",
+    "預金種目",
+    "口座番号",
+    "受取人名カナ",
+    "金額",
+    "手数料負担先",
+    "請求書件数",
+    "口座自然キー",
+]
+
+
+def write_amount_source(path: str | Path, batch, payees, invoice_counts,
+                        *, encoding: str = "cp932") -> None:
+    """列仕様が確定するまでの中間成果物を書き出す。
+
+    encoding は cp932 が既定（Excelでそのまま開ける）。FB-Web が UTF-8 を
+    要求するなら現場で切り替える — ONSITE.md ② で記録すること。
+    """
+    path = Path(path)
+    with path.open("w", encoding=encoding, newline="", errors="strict") as fh:
+        w = csv.writer(fh)
+        w.writerow(AMOUNT_SOURCE_HEADERS)
+        for p in batch.payments:
+            master = payees.get(p.payee_id)
+            raw1 = getattr(master, "customer_code_1", "") if master else ""
+            raw2 = getattr(master, "customer_code_2", "") if master else ""
+            key = account_key(p.bank_code, p.branch_code, p.deposit_type,
+                              p.account_number)
+            w.writerow([
+                p.payee_id,
+                normalize_code(raw1),
+                raw1,
+                normalize_code(raw2),
+                p.bank_code,
+                p.branch_code,
+                p.deposit_type,
+                p.account_number,
+                p.payee_name_kana,
+                p.amount,
+                ("先方負担" if any(n.startswith("先方負担") for n in p.notes)
+                 else "当方負担"),
+                invoice_counts.get(p.payee_id, 0),
+                "-".join(key),
+            ])
+
+
+# ===== ocr.py =========================================================
+"""スキャン請求書から金額を読む（多数決つき）。
+
+Tesseract は1回の読み取りでは信用できない。実物の請求書で測ったところ、
+設定を変えた11通りのうち4通りが誤読した（表の罫線を "1" と読み、
+376,772 を 3,767,721 にした）。**桁が1つ増えても、見た目は自然な数字になる。**
+
+そこで、同じ場所を**複数の設定で読み、一致したものだけ採用する**。
+一致しなければ「読めなかった」として人に回す。読めた数字が
+正しいかどうかは、さらに reconcile.py の検算が決める。
+
+  読む（複数回） → 全部一致？ → 検算に通る？ → 採用
+                     ↓ いいえ      ↓ いいえ
+                    人へ          人へ
+
+外部通信なし。Tesseract はローカルで動く画像認識であり、生成AIではない。
+"""
+
+
+
+
+# 読み取り設定。psm 7=1行, 8=1語。倍率2倍は罫線を拾いやすいので入れない
+# （実測で 3767721 の誤読を出した）。
+VARIANTS = [
+    {"psm": 7, "lang": "eng", "whitelist": "0123456789,", "scale": 1},
+    {"psm": 7, "lang": "eng", "whitelist": None, "scale": 1},
+    {"psm": 8, "lang": "eng", "whitelist": "0123456789,", "scale": 4},
+    {"psm": 7, "lang": "eng", "whitelist": "0123456789,", "scale": 4},
+]
+
+
+@dataclass
+class CellRead:
+    """1つの欄の読み取り結果。"""
+
+    label: str
+    value: int | None                  # 全設定が一致したときだけ入る
+    votes: dict[int, int] = field(default_factory=dict)
+    raw: list[str] = field(default_factory=list)
+
+    @property
+    def agreed(self) -> bool:
+        return self.value is not None
+
+    @property
+    def why(self) -> str:
+        if self.agreed:
+            return "一致"
+        if not self.votes:
+            return "数字が読めなかった"
+        got = ", ".join(f"{v:,}({n}票)" for v, n in
+                        sorted(self.votes.items(), key=lambda x: -x[1]))
+        return f"読み取りが割れた: {got}"
+
+
+def tesseract_available() -> bool:
+    return shutil.which("tesseract") is not None
+
+
+def _digits(text: str) -> list[int]:
+    out = []
+    for m in re.findall(r"\d[\d,. ]*\d|\d", text):
+        s = re.sub(r"[,. ]", "", m)
+        if s.isdigit():
+            out.append(int(s))
+    return out
+
+
+def read_cell(image, box: tuple[int, int, int, int], label: str,
+              *, require_unanimous: bool = True) -> CellRead:
+    """1つの欄を複数設定で読み、一致した値だけ返す。
+
+    require_unanimous=True のとき、全設定が同じ1つの数字を出した場合のみ
+    採用する。1つでも違えば None（＝人に回す）。
+    """
+    from PIL import Image, ImageOps
+
+    crop = image.crop(box).convert("L")
+    votes: Counter[int] = Counter()
+    raws: list[str] = []
+
+    with tempfile.TemporaryDirectory() as d:
+        tmp = Path(d) / "cell.png"
+        for v in VARIANTS:
+            img = crop
+            if v["scale"] != 1:
+                img = crop.resize((crop.width * v["scale"],
+                                   crop.height * v["scale"]))
+                img = ImageOps.autocontrast(img).point(
+                    lambda p: 0 if p < 140 else 255)
+            img.save(tmp)
+            cmd = ["tesseract", str(tmp), "stdout",
+                   "--psm", str(v["psm"]), "-l", v["lang"]]
+            if v["whitelist"]:
+                cmd += ["-c", f"tessedit_char_whitelist={v['whitelist']}"]
+            try:
+                out = subprocess.run(cmd, capture_output=True, text=True,
+                                     timeout=30).stdout
+            except (subprocess.TimeoutExpired, FileNotFoundError):
+                continue
+            raws.append(out.strip().replace("\n", " "))
+            found = _digits(out)
+            # 欄に数字が1つだけ写っている前提。複数出たら罫線を拾っている
+            if len(found) == 1:
+                votes[found[0]] += 1
+
+    value = None
+    if votes:
+        if require_unanimous:
+            if len(votes) == 1 and sum(votes.values()) == len(VARIANTS):
+                value = next(iter(votes))
+        else:
+            top, n = votes.most_common(1)[0]
+            if n > len(VARIANTS) / 2:
+                value = top
+
+    return CellRead(label=label, value=value, votes=dict(votes), raw=raws)
+
+
+def read_cells(image_path: str | Path,
+               boxes: dict[str, tuple[int, int, int, int]],
+               **kw) -> dict[str, CellRead]:
+    """テンプレートで決まった複数の欄をまとめて読む。"""
+    if not tesseract_available():
+        raise ValidationError(
+            "tesseract が見つかりません。OCRなしで運用する場合は "
+            "金額を手入力してください。")
+    from PIL import Image
+
+    image = Image.open(image_path)
+    return {label: read_cell(image, box, label, **kw)
+            for label, box in boxes.items()}
+
+
+# ===== readers.py =====================================================
+"""読み取り器の差し替え口と、二重読みによる合意判定。
+
+**読み取り器は信用しない。合意と検算を信用する。**
+
+Tesseract も VLM も、単独では桁を誤る。実測で Tesseract は設定違い11通り中
+4通りが誤読した（罫線を "1" と読み 376,772 → 3,767,721）。VLM も数字の
+読み違いが知られている。どちらも「もっともらしい間違った数字」を出す。
+
+そこで **仕組みの違う2つの読み手に同じ欄を読ませ、一致したときだけ採用**する。
+Tesseract（パターン認識）と VLM（生成モデル）は誤り方が違うので、
+同じ間違いを同時に起こす確率は、片方が間違う確率よりずっと低い。
+
+    Tesseract ─┐
+               ├→ 一致した？ ─Yes→ 検算 ─通った→ 2σ判定 ─→ 採用
+    VLM       ─┘      │No                │不通                │外れ
+                      ↓                  ↓                    ↓
+                     人へ                人へ              印をつけて人へ
+
+VLM は localhost の Ollama のみ。データは機内から出ない。
+（tests/test_offline_guarantee.py が URL を機械検査する）
+"""
+
+
+
+
+# Ollama のローカル既定。ここ以外を指せないよう、テストで検査している。
+OLLAMA_URL = "http://127.0.0.1:11434/api/generate"
+
+
+class FieldReader(Protocol):
+    """1つの欄から数字の候補を返すもの。"""
+
+    name: str
+
+    def read(self, image_path: str, box: tuple[int, int, int, int],
+             label: str) -> list[int]:
+        ...
+
+
+@dataclass
+class TesseractReader:
+    """既存の多数決OCR。設定違いで複数回読み、全一致した値だけ返す。"""
+
+    name: str = "tesseract"
+
+    def read(self, image_path, box, label) -> list[int]:
+        from PIL import Image
+        r = read_cell(Image.open(image_path), box, label)
+        return [r.value] if r.agreed else []
+
+
+@dataclass
+class OllamaVisionReader:
+    """localhost の Ollama で画像から数字を読む。
+
+    **この実装は未検証である。** 開発環境から Ollama のモデルを取得できず
+    （ollama.com / registry.ollama.ai / huggingface.co が遮断）、精度を
+    measure.py で実測していない。院内で実データにかけて測ること。
+    精度が出なくても安全性は変わらない（合意・検算・2σ が効くため）が、
+    自動で通る率は変わる。
+    """
+
+    model: str = "qwen2.5vl:3b"
+    name: str = "ollama"
+    timeout: int = 120
+    attempts: int = 2          # 同じ画像を複数回読ませ、揺れを検出する
+
+    PROMPT = (
+        "この画像は請求書の金額欄を切り出したものです。"
+        "写っている数字を、そのまま1つだけ半角数字で答えてください。"
+        "カンマ・円記号・説明は書かず、数字だけを出力してください。"
+        "読み取れない場合は UNKNOWN とだけ答えてください。"
+    )
+
+    def read(self, image_path, box, label) -> list[int]:
+        import base64
+        import io
+        import urllib.request
+        from PIL import Image
+
+        buf = io.BytesIO()
+        Image.open(image_path).crop(box).save(buf, format="PNG")
+        b64 = base64.b64encode(buf.getvalue()).decode()
+
+        seen: list[int] = []
+        for _ in range(self.attempts):
+            payload = json.dumps({
+                "model": self.model, "prompt": self.PROMPT,
+                "images": [b64], "stream": False,
+                "options": {"temperature": 0},
+            }).encode()
+            req = urllib.request.Request(
+                OLLAMA_URL, data=payload,
+                headers={"Content-Type": "application/json"})
+            try:
+                with urllib.request.urlopen(req, timeout=self.timeout) as r:
+                    body = json.loads(r.read().decode())
+            except Exception as e:                     # noqa: BLE001
+                raise ValidationError(
+                    f"Ollama に接続できません（{OLLAMA_URL}）: {e}。"
+                    f"`ollama serve` が動いているか確認してください。") from e
+            found = _digits(body.get("response", ""))
+            if len(found) == 1:
+                seen.append(found[0])
+
+        # 複数回読んで揺れたら採用しない
+        if len(seen) == self.attempts and len(set(seen)) == 1:
+            return [seen[0]]
+        return []
+
+
+@dataclass
+class CrossRead:
+    label: str
+    value: int | None
+    per_reader: dict[str, list[int]] = field(default_factory=dict)
+
+    @property
+    def agreed(self) -> bool:
+        return self.value is not None
+
+    @property
+    def why(self) -> str:
+        if self.agreed:
+            return "両方が一致"
+        parts = []
+        for name, vals in self.per_reader.items():
+            parts.append(f"{name}={vals[0]:,}" if vals else f"{name}=読めず")
+        return "不一致: " + " / ".join(parts)
+
+
+def cross_read(image_path: str, box: tuple[int, int, int, int], label: str,
+               readers: list[FieldReader]) -> CrossRead:
+    """複数の読み手に同じ欄を読ませ、**全員が同じ1つの数字**を出した時だけ採用。
+
+    1人でも読めなかった、または食い違ったら None（＝人へ）。
+    読み手を増やすほど自動通過率は下がり、安全側に倒れる。
+    """
+    if not readers:
+        raise ValidationError("読み取り器が指定されていません")
+
+    per: dict[str, list[int]] = {}
+    for r in readers:
+        per[r.name] = r.read(image_path, box, label)
+
+    values = [v[0] for v in per.values() if len(v) == 1]
+    ok = len(values) == len(readers) and len(set(values)) == 1
+    return CrossRead(label=label, value=values[0] if ok else None,
+                     per_reader=per)
+
+
 # ===== xlsx.py ========================================================
 """Minimal zero-dependency .xlsx writer.
 
@@ -1204,7 +1962,7 @@ the sheet is equivalent to approving the file.
 
 
 
-HEADERS = [
+SHEET_HEADERS = [
     "No", "支払先ID", "支払先名", "金融機関", "支店", "種目",
     "口座番号", "受取人名(半角カナ)", "カナ桁数", "振込金額",
     "手数料", "請求書件数", "請求書ファイル", "確認事項",
@@ -1233,8 +1991,8 @@ def build_rows(batch: TransferBatch, invoices: list[InvoiceRow],
     rows.append([])
     styles.append([])
 
-    rows.append(list(HEADERS))
-    styles.append([STYLE_HEADER] * len(HEADERS))
+    rows.append(list(SHEET_HEADERS))
+    styles.append([STYLE_HEADER] * len(SHEET_HEADERS))
 
     for i, p in enumerate(batch.payments, 1):
         items = by_payee.get(p.payee_id, [])
@@ -1256,19 +2014,19 @@ def build_rows(batch: TransferBatch, invoices: list[InvoiceRow],
             " / ".join(sorted({r.source_file for r in items if r.source_file})),
             " / ".join(note_parts),
         ])
-        style_row = [0] * len(HEADERS)
+        style_row = [0] * len(SHEET_HEADERS)
         style_row[9] = STYLE_YEN
         styles.append(style_row)
 
     rows.append([])
     styles.append([])
 
-    total_row: list = [""] * len(HEADERS)
+    total_row: list = [""] * len(SHEET_HEADERS)
     total_row[0] = "合計"
     total_row[8] = f"{batch.total_count} 件"
     total_row[9] = batch.total_amount
     rows.append(total_row)
-    total_styles = [STYLE_HEADER] * len(HEADERS)
+    total_styles = [STYLE_HEADER] * len(SHEET_HEADERS)
     total_styles[9] = STYLE_YEN_BOLD
     styles.append(total_styles)
 
@@ -1591,8 +2349,39 @@ def selftest() -> int:
         check("漢字は拒否", True)
 
     # 顧客コード
-    check("顧客コード正規化", normalize("9387") == "0000009387")
+    check("顧客コード正規化", normalize_code("9387") == "0000009387")
     check("空欄は一致しない", not same("", ""))
+
+    # 登録番号（T+13桁）— ネットなしで検査用数字を判定できる
+    check("登録番号の検査用数字", check_digit("310001000026") == 9)
+    try:
+        normalize_tnumber("T9310001000025")
+        check("登録番号の1桁誤りを弾く", False)
+    except ValidationError:
+        check("登録番号の1桁誤りを弾く", True)
+
+    # 請求書の検算 — 裏取りが無ければ通さない
+    fig = InvoiceFigures(total_billed=376772, purchases=342520, tax=34252)
+    check("検算が通る", reconcile(fig).payable)
+    check("裏取り無しは通さない",
+          not reconcile(InvoiceFigures(total_billed=376772)).payable)
+    check("1桁違いを弾く",
+          not reconcile(InvoiceFigures(total_billed=376779,
+                                       purchases=342520, tax=34252)).payable)
+
+    # 2σ判定
+    h = History({"P": [100000, 102000, 98000, 900000, 101000]})
+    check("平均がぶれても中央値で拾う", h.assess("P", 130000).needs_review)
+    check("履歴なしは必ず人へ", History().assess("X", 1).needs_review)
+    check("範囲内は通す",
+          not History({"P": [132000, 132000, 131500, 132500]})
+          .assess("P", 132000).needs_review)
+
+    # OCR は任意。入っていなければその旨だけ出す
+    if tesseract_available():
+        check("tesseract が使える", True)
+    else:
+        print("  注意: tesseract が見つかりません（金額は手入力になります）")
 
     # 組み立てと検証
     req = Requester(consignor_code="2000000000", name_kana="ｲ)ﾐﾗｲ",

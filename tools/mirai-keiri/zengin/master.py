@@ -14,6 +14,7 @@ from datetime import date, datetime
 from pathlib import Path
 
 from .kana import KanaError, to_zengin_kana
+from .tnumber import normalize_tnumber
 from .model import DEPOSIT_TYPES, ValidationError
 
 PAYEE_COLUMNS = [
@@ -94,9 +95,8 @@ def load_payees(path: str | Path) -> dict[str, Payee]:
             reg_raw = (row.get("registration_number") or "").strip()
             reg = ""
             if reg_raw:
-                from .tnumber import normalize as _norm_t
                 try:
-                    reg = _norm_t(reg_raw)
+                    reg = normalize_tnumber(reg_raw)
                 except ValidationError as e:
                     raise ValidationError(f"{path}:{lineno}: {pid}: {e}") from e
 

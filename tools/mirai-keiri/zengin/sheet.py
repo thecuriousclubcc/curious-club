@@ -15,7 +15,7 @@ from .invoices import Anomaly, InvoiceRow
 from .model import DEPOSIT_TYPES, TransferBatch
 from .xlsx import (STYLE_HEADER, STYLE_YEN, STYLE_YEN_BOLD, write_xlsx)
 
-HEADERS = [
+SHEET_HEADERS = [
     "No", "支払先ID", "支払先名", "金融機関", "支店", "種目",
     "口座番号", "受取人名(半角カナ)", "カナ桁数", "振込金額",
     "手数料", "請求書件数", "請求書ファイル", "確認事項",
@@ -44,8 +44,8 @@ def build_rows(batch: TransferBatch, invoices: list[InvoiceRow],
     rows.append([])
     styles.append([])
 
-    rows.append(list(HEADERS))
-    styles.append([STYLE_HEADER] * len(HEADERS))
+    rows.append(list(SHEET_HEADERS))
+    styles.append([STYLE_HEADER] * len(SHEET_HEADERS))
 
     for i, p in enumerate(batch.payments, 1):
         items = by_payee.get(p.payee_id, [])
@@ -67,19 +67,19 @@ def build_rows(batch: TransferBatch, invoices: list[InvoiceRow],
             " / ".join(sorted({r.source_file for r in items if r.source_file})),
             " / ".join(note_parts),
         ])
-        style_row = [0] * len(HEADERS)
+        style_row = [0] * len(SHEET_HEADERS)
         style_row[9] = STYLE_YEN
         styles.append(style_row)
 
     rows.append([])
     styles.append([])
 
-    total_row: list = [""] * len(HEADERS)
+    total_row: list = [""] * len(SHEET_HEADERS)
     total_row[0] = "合計"
     total_row[8] = f"{batch.total_count} 件"
     total_row[9] = batch.total_amount
     rows.append(total_row)
-    total_styles = [STYLE_HEADER] * len(HEADERS)
+    total_styles = [STYLE_HEADER] * len(SHEET_HEADERS)
     total_styles[9] = STYLE_YEN_BOLD
     styles.append(total_styles)
 

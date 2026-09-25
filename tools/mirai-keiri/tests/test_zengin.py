@@ -481,11 +481,11 @@ class TestCustomerCode(unittest.TestCase):
     """実データの 10桁/4桁 混在に耐えること。"""
 
     def test_short_code_pads_to_ten(self):
-        from zengin.custcode import normalize
+        from zengin.custcode import normalize_code as normalize
         self.assertEqual(normalize("9387"), "0000009387")
 
     def test_already_ten_digits_is_unchanged(self):
-        from zengin.custcode import normalize
+        from zengin.custcode import normalize_code as normalize
         self.assertEqual(normalize("0000000480"), "0000000480")
 
     def test_mixed_width_codes_match_after_normalising(self):
@@ -501,12 +501,12 @@ class TestCustomerCode(unittest.TestCase):
         self.assertFalse(same("", "0000000010"))
 
     def test_non_numeric_code_raises(self):
-        from zengin.custcode import normalize
+        from zengin.custcode import normalize_code as normalize
         with self.assertRaises(ValidationError):
             normalize("A123")
 
     def test_overlong_code_raises(self):
-        from zengin.custcode import normalize
+        from zengin.custcode import normalize_code as normalize
         with self.assertRaises(ValidationError):
             normalize("12345678901")
 
@@ -649,7 +649,7 @@ class TestRegistrationNumber(unittest.TestCase):
     REAL = "T9310001000026"   # 実物の請求書に印字されていた番号
 
     def test_real_number_validates_offline(self):
-        from zengin.tnumber import is_valid, normalize
+        from zengin.tnumber import is_valid, normalize_tnumber as normalize
         self.assertTrue(is_valid(self.REAL))
         self.assertEqual(normalize(self.REAL), self.REAL)
 
@@ -658,18 +658,18 @@ class TestRegistrationNumber(unittest.TestCase):
         self.assertEqual(check_digit(self.REAL[2:]), int(self.REAL[1]))
 
     def test_single_digit_misread_is_caught(self):
-        from zengin.tnumber import normalize
+        from zengin.tnumber import normalize_tnumber as normalize
         for bad in ("T9310001000025", "T9310001000036", "T8310001000026"):
             with self.assertRaises(ValidationError, msg=bad):
                 normalize(bad)
 
     def test_fullwidth_and_separators_normalise(self):
-        from zengin.tnumber import normalize
+        from zengin.tnumber import normalize_tnumber as normalize
         self.assertEqual(normalize("ｔ9310001000026"), self.REAL)
         self.assertEqual(normalize(" T9310001000026 "), self.REAL)
 
     def test_wrong_length_is_rejected(self):
-        from zengin.tnumber import normalize
+        from zengin.tnumber import normalize_tnumber as normalize
         for bad in ("T931000100002", "T93100010000267", "T93100010000A6"):
             with self.assertRaises(ValidationError, msg=bad):
                 normalize(bad)

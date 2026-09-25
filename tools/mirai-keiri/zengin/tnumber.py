@@ -34,13 +34,13 @@ def check_digit(body12: str) -> int:
 def is_valid(number: str) -> bool:
     """T番号として整合しているか。ネットアクセスなしで判定する。"""
     try:
-        normalize(number)
+        normalize_tnumber(number)
         return True
     except ValidationError:
         return False
 
 
-def normalize(number: str) -> str:
+def normalize_tnumber(number: str) -> str:
     """'t9310001000026' や全角混じりを 'T9310001000026' に整える。
 
     桁数・数字・検査用数字のいずれかが合わなければ例外。
@@ -79,7 +79,7 @@ def match(read_number: str, master: dict[str, str]) -> str | None:
     推測による部分一致は行わない。
     """
     try:
-        key = normalize(read_number)
+        key = normalize_tnumber(read_number)
     except ValidationError:
         return None
     return master.get(key)

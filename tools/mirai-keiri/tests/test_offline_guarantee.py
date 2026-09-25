@@ -9,6 +9,7 @@ and can be cited directly in the 検査基準.
 from __future__ import annotations
 
 import ast
+import re
 import socket
 import sys
 import unittest
@@ -19,7 +20,7 @@ sys.path.insert(0, str(PACKAGE.parent))
 
 # Modules that would give the pipeline a way off the machine, or to a model.
 FORBIDDEN_IMPORTS = {
-    "socket", "http", "httplib", "urllib", "urllib2", "urllib3", "requests",
+    "socket", "http", "httplib", "urllib2", "urllib3", "requests",
     "httpx", "aiohttp", "ftplib", "smtplib", "telnetlib", "xmlrpc",
     "openai", "anthropic", "ollama", "groq", "google",
     "transformers", "torch", "llama_cpp", "langchain", "boto3",
@@ -29,6 +30,14 @@ FORBIDDEN_IMPORTS = {
 # 限って許す。許すかわりに、下の TestSubprocessIsTesseractOnly で
 # 「起動されるのは tesseract だけ」「shell=True を使わない」を機械検査する。
 SUBPROCESS_ALLOWED_IN = {"ocr.py"}
+
+# urllib は原則禁止。ローカルの Ollama を叩く readers.py に限って許す。
+# 許すかわりに TestLocalOnly が「宛先が 127.0.0.1 / localhost だけ」を検査する。
+# 保証の意味はこう変わる:
+#   旧「ネットワークを一切使わない」
+#   新「**この機械の外へは出ない**」（機械検査つき）
+URLLIB_ALLOWED_IN = {"readers.py"}
+LOCAL_HOSTS = ("127.0.0.1", "localhost", "::1")
 
 
 def _module_files() -> list[Path]:
@@ -51,6 +60,11 @@ class TestNoNetworkImports(unittest.TestCase):
                     root = name.split(".")[0]
                     if root in FORBIDDEN_IMPORTS:
                         offenders.append(f"{path.name}:{node.lineno} imports {name}")
+                    if (root == "urllib"
+                            and path.name not in URLLIB_ALLOWED_IN):
+                        offenders.append(
+                            f"{path.name}:{node.lineno} imports urllib "
+                            f"（許可は {sorted(URLLIB_ALLOWED_IN)} のみ）")
                     if (root == "subprocess"
                             and path.name not in SUBPROCESS_ALLOWED_IN):
                         offenders.append(
@@ -102,6 +116,94 @@ class TestSubprocessIsTesseractOnly(unittest.TestCase):
     def test_ocr_declares_no_network_use(self):
         src = (PACKAGE / "ocr.py").read_text(encoding="utf-8")
         self.assertIn("外部通信なし", src)
+
+
+class TestLocalOnly(unittest.TestCase):
+    """外へ出る通信が存在しないことを、**要求の宛先**で検査する。
+
+    文字列に http:// が含まれること自体は問題ではない。xlsx.py の
+    openxmlformats.org は XML の名前空間（識別子）で、取得しに行くものでは
+    ない。コメント中のホスト名も同様。検査すべきは「実際に要求を出す先」。
+
+    保証の意味:
+      旧「ネットワークを一切使わない」
+      新「**この機械の外へは出ない**」（下記で機械検査）
+    """
+
+    def _readers_tree(self):
+        return ast.parse((PACKAGE / "readers.py").read_text(encoding="utf-8"))
+
+    def test_ollama_url_constant_is_loopback(self):
+        from zengin.readers import OLLAMA_URL
+        host = OLLAMA_URL.split("//", 1)[1].split("/")[0].split(":")[0]
+        self.assertIn(host, LOCAL_HOSTS, f"宛先が loopback ではない: {OLLAMA_URL}")
+
+    def test_only_readers_py_imports_urllib(self):
+        offenders = []
+        for path in _module_files():
+            if path.name in URLLIB_ALLOWED_IN:
+                continue
+            tree = ast.parse(path.read_text(encoding="utf-8"))
+            for node in ast.walk(tree):
+                mods = []
+                if isinstance(node, ast.Import):
+                    mods = [a.name for a in node.names]
+                elif isinstance(node, ast.ImportFrom):
+                    mods = [node.module or ""]
+                if any(m.split(".")[0] == "urllib" for m in mods):
+                    offenders.append(f"{path.name}:{node.lineno}")
+        self.assertEqual(offenders, [])
+
+    def test_every_request_uses_the_loopback_constant(self):
+        """urlopen / Request の宛先が OLLAMA_URL 定数だけであること。
+
+        文字列リテラルや組み立てたURLを直接渡していたら失敗させる。
+        """
+        calls = []
+        for node in ast.walk(self._readers_tree()):
+            if not isinstance(node, ast.Call):
+                continue
+            fn = node.func
+            name = (fn.attr if isinstance(fn, ast.Attribute)
+                    else getattr(fn, "id", ""))
+            if name in ("urlopen", "Request"):
+                calls.append(node)
+        self.assertTrue(calls, "urllib の呼び出しが見つかりません")
+
+        # Request(...) は宛先を直接受け取るので、必ず OLLAMA_URL であること。
+        requests_ = [c for c in calls if self._name_of(c) == "Request"]
+        self.assertTrue(requests_, "Request の生成が見つかりません")
+        for c in requests_:
+            self.assertTrue(c.args, "Request に宛先が渡されていません")
+            first = c.args[0]
+            self.assertIsInstance(
+                first, ast.Name,
+                f"line {first.lineno}: 宛先はリテラルではなく OLLAMA_URL 定数で")
+            self.assertEqual(
+                first.id, "OLLAMA_URL",
+                f"line {first.lineno}: 宛先が OLLAMA_URL 以外です")
+
+        # urlopen は Request オブジェクトだけを受け取ること。
+        # 文字列URLを直接渡す経路を塞ぐ（Request 側の検査を迂回できてしまう）。
+        for c in [c for c in calls if self._name_of(c) == "urlopen"]:
+            self.assertTrue(c.args)
+            first = c.args[0]
+            self.assertIsInstance(
+                first, ast.Name,
+                f"line {first.lineno}: urlopen にURL文字列を直接渡さないこと")
+
+    @staticmethod
+    def _name_of(call: ast.Call) -> str:
+        fn = call.func
+        return fn.attr if isinstance(fn, ast.Attribute) else getattr(fn, "id", "")
+
+    def test_no_url_building_from_parts(self):
+        """http:// を含む文字列リテラルが readers.py に無いこと（定数を除く）。"""
+        src = (PACKAGE / "readers.py").read_text(encoding="utf-8")
+        literals = re.findall(r'"(https?://[^"]*)"', src)
+        for lit in literals:
+            host = lit.split("//", 1)[1].split("/")[0].split(":")[0]
+            self.assertIn(host, LOCAL_HOSTS, f"外向きのURL: {lit}")
 
 
 class TestNoSocketAtRuntime(unittest.TestCase):

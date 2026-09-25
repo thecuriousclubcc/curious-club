@@ -18,9 +18,9 @@ from __future__ import annotations
 import csv
 from pathlib import Path
 
-from .custcode import account_key, normalize
+from .custcode import account_key, normalize_code
 
-HEADERS = [
+AMOUNT_SOURCE_HEADERS = [
     "payee_id",
     "顧客コード1_10桁",
     "顧客コード1_原文",
@@ -47,7 +47,7 @@ def write_amount_source(path: str | Path, batch, payees, invoice_counts,
     path = Path(path)
     with path.open("w", encoding=encoding, newline="", errors="strict") as fh:
         w = csv.writer(fh)
-        w.writerow(HEADERS)
+        w.writerow(AMOUNT_SOURCE_HEADERS)
         for p in batch.payments:
             master = payees.get(p.payee_id)
             raw1 = getattr(master, "customer_code_1", "") if master else ""
@@ -56,9 +56,9 @@ def write_amount_source(path: str | Path, batch, payees, invoice_counts,
                               p.account_number)
             w.writerow([
                 p.payee_id,
-                normalize(raw1),
+                normalize_code(raw1),
                 raw1,
-                normalize(raw2),
+                normalize_code(raw2),
                 p.bank_code,
                 p.branch_code,
                 p.deposit_type,

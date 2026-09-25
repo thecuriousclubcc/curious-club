@@ -12,8 +12,9 @@ from __future__ import annotations
 import pathlib
 import re
 
-ORDER = ["model", "kana", "custcode", "fees", "format", "master",
-         "invoices", "xlsx", "sheet", "verify", "cli"]
+ORDER = ["model", "kana", "custcode", "tnumber", "fees", "reconcile",
+         "history", "format", "master", "invoices", "amounts", "ocr",
+         "readers", "xlsx", "sheet", "verify", "cli"]
 
 HEADER = '''#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
@@ -60,8 +61,39 @@ def selftest() -> int:
         check("漢字は拒否", True)
 
     # 顧客コード
-    check("顧客コード正規化", normalize("9387") == "0000009387")
+    check("顧客コード正規化", normalize_code("9387") == "0000009387")
     check("空欄は一致しない", not same("", ""))
+
+    # 登録番号（T+13桁）— ネットなしで検査用数字を判定できる
+    check("登録番号の検査用数字", check_digit("310001000026") == 9)
+    try:
+        normalize_tnumber("T9310001000025")
+        check("登録番号の1桁誤りを弾く", False)
+    except ValidationError:
+        check("登録番号の1桁誤りを弾く", True)
+
+    # 請求書の検算 — 裏取りが無ければ通さない
+    fig = InvoiceFigures(total_billed=376772, purchases=342520, tax=34252)
+    check("検算が通る", reconcile(fig).payable)
+    check("裏取り無しは通さない",
+          not reconcile(InvoiceFigures(total_billed=376772)).payable)
+    check("1桁違いを弾く",
+          not reconcile(InvoiceFigures(total_billed=376779,
+                                       purchases=342520, tax=34252)).payable)
+
+    # 2σ判定
+    h = History({"P": [100000, 102000, 98000, 900000, 101000]})
+    check("平均がぶれても中央値で拾う", h.assess("P", 130000).needs_review)
+    check("履歴なしは必ず人へ", History().assess("X", 1).needs_review)
+    check("範囲内は通す",
+          not History({"P": [132000, 132000, 131500, 132500]})
+          .assess("P", 132000).needs_review)
+
+    # OCR は任意。入っていなければその旨だけ出す
+    if tesseract_available():
+        check("tesseract が使える", True)
+    else:
+        print("  注意: tesseract が見つかりません（金額は手入力になります）")
 
     # 組み立てと検証
     req = Requester(consignor_code="2000000000", name_kana="ｲ)ﾐﾗｲ",
@@ -103,6 +135,23 @@ def selftest() -> int:
 '''
 
 
+def _check_coverage() -> None:
+    """パッケージの全モジュールが ORDER に入っていること。
+
+    漏れると、そのモジュールの関数が単一ファイル版で未定義になる。
+    実際に tnumber.py の漏れで NameError を出したので、機械検査にした。
+    """
+    on_disk = {p.stem for p in pathlib.Path("zengin").glob("*.py")
+               if p.stem != "__init__"}
+    missing = on_disk - set(ORDER)
+    extra = set(ORDER) - on_disk
+    if missing or extra:
+        raise SystemExit(
+            f"ORDER がパッケージと一致しません。\n"
+            f"  ORDER に無い: {sorted(missing)}\n"
+            f"  存在しない: {sorted(extra)}")
+
+
 def _check_collisions() -> None:
     """Bundling flattens every module into one namespace.
 
@@ -124,7 +173,8 @@ def _check_collisions() -> None:
             elif isinstance(node, ast.AnnAssign) and isinstance(node.target, ast.Name):
                 names = [node.target.id]
             for n in names:
-                if not n.startswith("_"):
+                # アンダースコア始まりも平坦化すれば衝突する。除外しない。
+                if not n.startswith("__"):
                     owners[n].append(mod)
 
     clashes = {n: m for n, m in owners.items() if len(m) > 1}
@@ -136,6 +186,7 @@ def _check_collisions() -> None:
 
 
 def bundle() -> str:
+    _check_coverage()
     _check_collisions()
     parts = [HEADER]
     seen_imports = set()
