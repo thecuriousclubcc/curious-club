@@ -104,6 +104,41 @@ pip install --no-index --find-links offline rapidocr-onnxruntime   # OCRを使�
 > **注意:** wheel は左PCの OS と Python の版に合っていないと入らない。
 > 先に左PCで `python3 --version` を確認してから集めること。
 
+## 使い方（通し）
+
+```bash
+python3 mirai_keiri.py --process \
+    --pdfs      新共有/請求書/2026-10 \
+    --templates data/templates/invoice_templates.json \
+    --master    data/payees.csv \
+    --config    data/requester.json \
+    --history   data/history.json \
+    --date      2026-10-31 \
+    --out       out/ --serve
+```
+
+    PDF群 → 請求書ごとに分割 → 業者を特定 → 金額を読む → 検算 → 2σ
+        → 確認待ちが残る？
+             はい → 確認画面（終了コード2）。**銀行用ファイルは作らない**
+             いいえ → 振込一覧表 + 銀行用ファイル（終了コード0）
+
+確認が済んだら、もう一度同じコマンドを実行すれば出力まで進む。
+
+### 実物での通し確認（2026-09-25）
+
+24ページのPDF（16業者）を流し、振込先マスタに2社だけ登録した状態:
+
+```
+請求書 16通 を読みました
+  自動で確定 1件          ← アステム 1,407,406円（正解）
+  あなたの確認待ち 15件    ← 同一業者の連続1件 + マスタ未登録14件
+  → 確認が済むまで銀行用ファイルは作りません
+```
+
+アステム1通だけのPDFでは出力まで到達し、全銀ファイルの金額欄が
+`0001407406`、顧客コードが92-101バイト目に入ることを確認した。
+所要は約5秒/ページ。
+
 ## 確認画面（経理担当者向け）
 
 ```bash

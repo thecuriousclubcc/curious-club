@@ -14,7 +14,7 @@ import re
 
 ORDER = ["model", "kana", "custcode", "tnumber", "fees", "reconcile",
          "history", "templates", "format", "master", "invoices", "amounts",
-         "ocr", "readers", "autolocate", "intake", "measure", "review", "pipeline", "review_server", "xlsx", "sheet", "verify", "cli"]
+         "ocr", "readers", "autolocate", "intake", "measure", "review", "pipeline", "review_server", "run", "xlsx", "sheet", "verify", "cli"]
 
 HEADER = '''#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
@@ -258,11 +258,9 @@ if __name__ == "__main__":
     import sys as _sys
     if "--selftest" in _sys.argv:
         raise SystemExit(selftest())
-    if "--review" in _sys.argv:
-        _sys.argv.remove("--review")
-        print("確認画面を出すには、パイプラインから ReviewQueue を渡します。")
-        print("単体では確認待ちが無いため、何も表示されません。")
-        raise SystemExit(0)
+    if "--process" in _sys.argv:
+        _sys.argv.remove("--process")
+        raise SystemExit(run_main())
     if "--measure" in _sys.argv:
         _sys.argv.remove("--measure")
         raise SystemExit(measure_main())

@@ -219,6 +219,19 @@ python3 mirai_keiri.py --measure --invoices <そのフォルダ> \
 
 ---
 
+## もし時間が余ったら（任意）
+
+請求書を集めたあと、通しで動かしてみることもできます。
+
+```
+python3 mirai_keiri.py --process --pdfs <請求書のフォルダ> \
+    --templates <テンプレート.json> --master <振込先.csv> \
+    --config <委託者.json> --date <振込日> --out out/ --serve
+```
+
+登録されていない業者は「確認待ち」に出ます。**それが正常です。**
+銀行用ファイルは、確認待ちが全部片付くまで作られません。
+
 ## 帰る前に
 
 - [ ] テストで作ったデータを **消したか** 確認
