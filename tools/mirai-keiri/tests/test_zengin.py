@@ -1389,3 +1389,76 @@ class TestAutolocateIsNotTrusted(unittest.TestCase):
         junk = InvoiceFigures(purchases=1, tax=1, subtotal=1,
                               total_billed=None, read_by="autolocate")
         self.assertFalse(reconcile(junk).payable)
+
+
+class TestPipeline(unittest.TestCase):
+    """部品を繋いだところでも関門が効くこと。"""
+
+    def payee(self, pid, verified=True):
+        from zengin.master import Payee
+        return Payee(payee_id=pid, display_name=f"業者{pid}", bank_code="0185",
+                     bank_name_kana="ｶｺﾞｼﾏ", branch_code="201",
+                     branch_name_kana="ﾃﾝﾓﾝｶﾝ", deposit_type="1",
+                     account_number="1234567", payee_name_kana="ｶ)ﾃｽﾄ",
+                     fee_borne_by="sender",
+                     verified_on=date(2026, 9, 1) if verified else None,
+                     verified_by="中村" if verified else "",
+                     conversion_notes=[])
+
+    def result(self, resolved=(), pending=()):
+        from zengin.pipeline import Result, Resolved
+        from zengin.reconcile import InvoiceFigures
+        from zengin.review import ReviewItem, ReviewQueue, UNREADABLE
+        r = Result(queue=ReviewQueue())
+        for pid, amt in resolved:
+            r.resolved.append(Resolved(payee_id=pid, display_name=pid,
+                                       amount=amt, registration_number=""))
+        for i, pid in enumerate(pending):
+            r.queue.add(ReviewItem(f"x{i}", pid, pid, UNREADABLE,
+                                   InvoiceFigures()))
+        r.invoices_seen = len(r.resolved) + len(pending)
+        return r
+
+    def test_no_bank_file_while_anything_is_pending(self):
+        from zengin.pipeline import to_payments
+        r = self.result(resolved=[("P001", 1000)], pending=["P002"])
+        self.assertFalse(r.can_output)
+        with self.assertRaises(ValidationError) as cm:
+            to_payments(r, {"P001": self.payee("P001"),
+                            "P002": self.payee("P002")})
+        self.assertIn("銀行用ファイルは作りません", str(cm.exception))
+
+    def test_same_payee_invoices_are_summed(self):
+        from zengin.pipeline import to_payments
+        r = self.result(resolved=[("P001", 1000), ("P001", 2500)])
+        pays = to_payments(r, {"P001": self.payee("P001")})
+        self.assertEqual(len(pays), 1)
+        self.assertEqual(pays[0].amount, 3500)
+
+    def test_unverified_account_stops_the_run(self):
+        from zengin.pipeline import to_payments
+        r = self.result(resolved=[("P001", 1000)])
+        with self.assertRaises(ValidationError) as cm:
+            to_payments(r, {"P001": self.payee("P001", verified=False)})
+        self.assertIn("口座が未確認", str(cm.exception))
+
+    def test_manually_fixed_items_are_included_and_marked(self):
+        from zengin.pipeline import to_payments
+        from zengin.reconcile import InvoiceFigures
+        from zengin.review import ReviewItem, ReviewQueue, UNREADABLE
+        from zengin.history import History
+        r = self.result()
+        r.queue = ReviewQueue(history=History({"P001": [370_000, 375_000, 372_000, 378_000]}))
+        r.queue.add(ReviewItem("x", "P001", "業者P001", UNREADABLE,
+                               InvoiceFigures(purchases=342_520, tax=34_252)))
+        r.queue.resolve("x", 376_772, who="田中")
+        pays = to_payments(r, {"P001": self.payee("P001")})
+        self.assertEqual(pays[0].amount, 376_772)
+        self.assertTrue(any("手入力" in n for n in pays[0].notes))
+
+    def test_summary_says_the_file_is_withheld(self):
+        r = self.result(resolved=[("P001", 1)], pending=["P002"])
+        text = "\n".join(r.lines())
+        self.assertIn("請求書 2通", text)
+        self.assertIn("自動で確定 1件", text)
+        self.assertIn("銀行用ファイルは作りません", text)

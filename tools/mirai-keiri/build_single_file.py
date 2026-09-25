@@ -14,7 +14,7 @@ import re
 
 ORDER = ["model", "kana", "custcode", "tnumber", "fees", "reconcile",
          "history", "templates", "format", "master", "invoices", "amounts",
-         "ocr", "readers", "autolocate", "intake", "measure", "review", "review_server", "xlsx", "sheet", "verify", "cli"]
+         "ocr", "readers", "autolocate", "intake", "measure", "review", "pipeline", "review_server", "xlsx", "sheet", "verify", "cli"]
 
 HEADER = '''#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
@@ -197,19 +197,52 @@ def bundle() -> str:
         text = src.read_text(encoding="utf-8")
         # Strip each module's own __main__ block; the bundle supplies one.
         text = re.split(r'\nif __name__ == "__main__":', text)[0]
+
+        # Import statements can span several lines:
+        #     from .review import (A, B,
+        #                          C)
+        # A per-line regex only removes the first line and leaves the rest
+        # as stray indented text (IndentationError in the bundle). Use the
+        # parser to get each statement's real line span.
+        import ast as _ast
+        tree = _ast.parse(text)
+        drop: set[int] = set()
+        replace_with: dict[int, str] = {}
+        # Walk the whole tree: intra-package imports also appear inside
+        # functions (deferred imports). A top-level-only pass leaves those
+        # behind and the bundle still references the package.
+        for node in _ast.walk(tree):
+            if not isinstance(node, (_ast.Import, _ast.ImportFrom)):
+                continue
+            span = range(node.lineno, (node.end_lineno or node.lineno) + 1)
+            if isinstance(node, _ast.ImportFrom) and node.level:
+                drop.update(span)                       # intra-package
+                if node.col_offset:
+                    # Inside a block: deleting the only statement would leave
+                    # an empty body. Put a `pass` back at the same indent.
+                    replace_with[node.lineno] = " " * node.col_offset + "pass"
+                continue
+            if node.col_offset:
+                continue      # 関数内の標準ライブラリ import はそのまま残す
+            spelled = ", ".join(
+                a.name + (f" as {a.asname}" if a.asname else "")
+                for a in node.names)
+            if isinstance(node, _ast.ImportFrom):
+                module = node.module or ""
+                if "__future__" in module:
+                    seen_imports.add("from __future__ import annotations")
+                else:
+                    seen_imports.add(f"from {module} import {spelled}")
+            else:
+                seen_imports.add(f"import {spelled}")
+            drop.update(span)
+
         lines = []
-        for line in text.split("\n"):
-            # Drop intra-package imports; everything lands in one namespace.
-            if re.match(r"\s*from \.\w* import", line) or re.match(r"\s*from \. import", line):
-                continue
-            if re.match(r"\s*from __future__ import", line):
-                seen_imports.add("from __future__ import annotations")
-                continue
-            m = re.match(r"^(import \S+|from [\w.]+ import .+)$", line)
-            if m and not line.startswith("from ."):
-                seen_imports.add(line)
-                continue
-            lines.append(line)
+        for i, ln in enumerate(text.split("\n"), 1):
+            if i in replace_with:
+                lines.append(replace_with[i])
+            elif i not in drop:
+                lines.append(ln)
         bodies.append(f"\n# ===== {mod}.py " + "=" * (60 - len(mod)) + "\n"
                       + "\n".join(lines))
 
