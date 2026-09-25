@@ -641,3 +641,58 @@ class TestInvoiceReconciliation(unittest.TestCase):
     def test_negative_total_is_rejected(self):
         from zengin.reconcile import reconcile
         self.assertFalse(reconcile(self.real(total_billed=-1)).payable)
+
+
+class TestRegistrationNumber(unittest.TestCase):
+    """登録番号はネットなしで真偽を判定でき、マスタ照合の鍵になる。"""
+
+    REAL = "T9310001000026"   # 実物の請求書に印字されていた番号
+
+    def test_real_number_validates_offline(self):
+        from zengin.tnumber import is_valid, normalize
+        self.assertTrue(is_valid(self.REAL))
+        self.assertEqual(normalize(self.REAL), self.REAL)
+
+    def test_check_digit_matches_the_real_number(self):
+        from zengin.tnumber import check_digit
+        self.assertEqual(check_digit(self.REAL[2:]), int(self.REAL[1]))
+
+    def test_single_digit_misread_is_caught(self):
+        from zengin.tnumber import normalize
+        for bad in ("T9310001000025", "T9310001000036", "T8310001000026"):
+            with self.assertRaises(ValidationError, msg=bad):
+                normalize(bad)
+
+    def test_fullwidth_and_separators_normalise(self):
+        from zengin.tnumber import normalize
+        self.assertEqual(normalize("ｔ9310001000026"), self.REAL)
+        self.assertEqual(normalize(" T9310001000026 "), self.REAL)
+
+    def test_wrong_length_is_rejected(self):
+        from zengin.tnumber import normalize
+        for bad in ("T931000100002", "T93100010000267", "T93100010000A6"):
+            with self.assertRaises(ValidationError, msg=bad):
+                normalize(bad)
+
+    def test_unknown_number_returns_none_not_a_guess(self):
+        # 新規取引先は稀。引けなければ止めて人に回す。部分一致はしない。
+        from zengin.tnumber import match
+        self.assertIsNone(match("T9310001000026", {}))
+        self.assertIsNone(match("not-a-number", {"T9310001000026": "P001"}))
+
+    def test_known_number_resolves_to_payee(self):
+        from zengin.tnumber import match
+        self.assertEqual(match("t9310001000026", {self.REAL: "P001"}), "P001")
+
+    def test_duplicate_registration_in_master_raises(self):
+        from zengin.master import Payee, registration_index
+        def mk(pid):
+            return Payee(payee_id=pid, display_name=pid, bank_code="0185",
+                         bank_name_kana="ｶ", branch_code="201",
+                         branch_name_kana="ﾃ", deposit_type="1",
+                         account_number="1", payee_name_kana="ｶ)ﾃｽﾄ",
+                         fee_borne_by="sender", verified_on=date(2026, 9, 1),
+                         verified_by="中村", conversion_notes=[],
+                         registration_number=self.REAL)
+        with self.assertRaises(ValidationError):
+            registration_index({"P001": mk("P001"), "P002": mk("P002")})

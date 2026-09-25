@@ -780,6 +780,9 @@ class Payee:
     # FB-Web 受取人マスタの顧客コード。28.4%が空欄なので既定は空。
     customer_code_1: str = ""
     customer_code_2: str = ""
+    # 適格請求書発行事業者登録番号。請求書から業者を引くための照合キー。
+    # 国税庁には問い合わせない（院内は閉鎖環境）。マスタ内の完全一致のみ。
+    registration_number: str = ""
 
     @property
     def is_verified(self) -> bool:
@@ -827,6 +830,14 @@ def load_payees(path: str | Path) -> dict[str, Payee]:
                 raise ValidationError(
                     f"{path}:{lineno}: {pid}: fee_borne_by は sender / beneficiary: {fee!r}")
 
+            reg_raw = (row.get("registration_number") or "").strip()
+            reg = ""
+            if reg_raw:
+                try:
+                    reg = _norm_t(reg_raw)
+                except ValidationError as e:
+                    raise ValidationError(f"{path}:{lineno}: {pid}: {e}") from e
+
             verified_raw = (row["verified_on"] or "").strip()
             verified_on = None
             if verified_raw:
@@ -850,11 +861,29 @@ def load_payees(path: str | Path) -> dict[str, Payee]:
                 fee_borne_by=fee,
                 customer_code_1=(row.get("customer_code_1") or "").strip(),
                 customer_code_2=(row.get("customer_code_2") or "").strip(),
+                registration_number=reg,
                 verified_on=verified_on,
                 verified_by=(row["verified_by"] or "").strip(),
                 conversion_notes=notes,
             )
     return payees
+
+
+def registration_index(payees: dict[str, Payee]) -> dict[str, str]:
+    """{正規化済みT番号: payee_id}。請求書の登録番号から業者を引くため。
+
+    同じ番号が2社に付いていたら止める（登録ミス。黙って片方を選ばない）。
+    """
+    index: dict[str, str] = {}
+    for pid, p in payees.items():
+        if not p.registration_number:
+            continue
+        if p.registration_number in index:
+            raise ValidationError(
+                f"登録番号 {p.registration_number} が "
+                f"{index[p.registration_number]} と {pid} で重複しています")
+        index[p.registration_number] = pid
+    return index
 
 
 # ===== invoices.py ====================================================
