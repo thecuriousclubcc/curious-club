@@ -1329,3 +1329,63 @@ class TestReviewServer(unittest.TestCase):
     def test_bind_host_is_loopback(self):
         from zengin.review_server import BIND_HOST
         self.assertIn(BIND_HOST, ("127.0.0.1", "localhost", "::1"))
+
+
+class TestAutolocateIsNotTrusted(unittest.TestCase):
+    """見出しからの推定は実用にならない。その事実と、安全側が効くことを固定する。"""
+
+    def test_chinese_variants_are_folded(self):
+        # RapidOCR は日本語の見出しを中国語字体で返す。これを吸収しないと
+        # 見出しが1件も見つからない（実際に起きた）。
+        from zengin.autolocate import TextBox
+        b = TextBox("今回御請求额", 0, 0, 10, 10, 0.9)
+        self.assertEqual(b.normalised, "今回御請求額")
+        self.assertEqual(TextBox("今回合计金额", 0, 0, 1, 1, 1).normalised,
+                         "今回合計金額")
+
+    def test_longer_label_wins_over_shorter(self):
+        # 「請求額」だけで当てると「前回御請求額」を拾ってしまう
+        from zengin.autolocate import TextBox, find_label
+        boxes = [TextBox("前回御請求額", 0, 0, 100, 20, 0.9),
+                 TextBox("今回御請求額", 200, 0, 300, 20, 0.9)]
+        self.assertEqual(find_label(boxes, "今回御請求額").x0, 200)
+
+    def test_value_to_the_right_is_preferred(self):
+        from zengin.autolocate import TextBox, value_near
+        label = TextBox("今回御請求額", 0, 0, 100, 20, 0.9)
+        boxes = [label, TextBox("376,772", 120, 2, 200, 20, 0.9),
+                 TextBox("999", 0, 60, 60, 78, 0.9)]
+        self.assertEqual(value_near(boxes, label).as_int, 376_772)
+
+    def test_value_below_is_used_when_nothing_is_to_the_right(self):
+        from zengin.autolocate import TextBox, value_near
+        label = TextBox("今回御請求額", 0, 0, 100, 20, 0.9)
+        boxes = [label, TextBox("376,772", 10, 26, 90, 44, 0.9)]
+        self.assertEqual(value_near(boxes, label).as_int, 376_772)
+
+    def test_nothing_nearby_returns_none_rather_than_guessing(self):
+        from zengin.autolocate import TextBox, value_near
+        label = TextBox("今回御請求額", 0, 0, 100, 20, 0.9)
+        far = TextBox("376,772", 900, 900, 1000, 920, 0.9)
+        self.assertIsNone(value_near([label, far], label))
+
+    def test_a_column_shift_is_caught_by_reconciliation(self):
+        """推定が1列ずれた実際の結果は、検算で止まる。
+
+        アイティーアイで autolocate が出した値（買上額と消費税額が
+        入れ替わった形）をそのまま検算にかけると不合格になる。
+        推定が外れても誤った金額が振込に入らないことの根拠。
+        """
+        from zengin.reconcile import InvoiceFigures, reconcile
+        wrong = InvoiceFigures(
+            previous_billed=592_438, payment_received=592_438,
+            carried_over=None, purchases=34_252, tax=376_772,
+            subtotal=376_772, total_billed=376_772, read_by="autolocate")
+        self.assertFalse(reconcile(wrong).payable)
+
+    def test_total_failure_also_never_passes(self):
+        # アステムでは 0/7。値が 1 などになっても通らない
+        from zengin.reconcile import InvoiceFigures, reconcile
+        junk = InvoiceFigures(purchases=1, tax=1, subtotal=1,
+                              total_billed=None, read_by="autolocate")
+        self.assertFalse(reconcile(junk).payable)
