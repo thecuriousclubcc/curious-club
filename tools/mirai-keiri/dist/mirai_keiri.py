@@ -1721,6 +1721,54 @@ class TesseractReader:
 
 
 @dataclass
+class RapidOcrReader:
+    """RapidOCR（PP-OCRv4）で読む。モデルを同梱しており取得不要。
+
+    実測（実物のスキャン請求書・7欄）:
+        Tesseract 3/7 正解 / RapidOCR 7/7 正解
+    Tesseract が読めなかった 592,438 や 繰越額 0 も読めた。
+    ただし **標本は請求書1通ぶん**であり、一般の精度を示すものではない。
+    院内で複数業者にかけて測り直すこと（measure モード）。
+
+    生成モデルではない（CNN/CRNN 系の画像認識）。外部通信もしない。
+    枠が分割されることがある（"376." と "772"）ので左から連結する。
+    """
+
+    name: str = "rapidocr"
+    pad: int = 30              # 切り出しが小さすぎると文字検出が働かない
+    min_confidence: float = 0.5
+    _engine: object = None
+
+    def _ocr(self):
+        if self._engine is None:
+            try:
+                from rapidocr_onnxruntime import RapidOCR
+            except ImportError as e:
+                raise ValidationError(
+                    "rapidocr-onnxruntime が入っていません。"
+                    "オフライン導入手順は README を参照してください。") from e
+            self._engine = RapidOCR()
+        return self._engine
+
+    def read(self, image_path, box, label) -> list[int]:
+        import numpy as np
+        from PIL import Image
+
+        x0, y0, x1, y1 = box
+        img = Image.open(image_path)
+        arr = np.array(img.crop((max(0, x0 - self.pad), max(0, y0 - self.pad),
+                                 x1 + self.pad, y1 + self.pad)).convert("RGB"))
+        res, _ = self._ocr()(arr)
+        if not res:
+            return []
+        parts = sorted(res, key=lambda r: r[0][0][0])
+        if min(float(p[2]) for p in parts) < self.min_confidence:
+            return []
+        found = _digits("".join(str(p[1]) for p in parts))
+        return [found[0]] if len(found) == 1 else []
+
+
+@dataclass
 class OllamaVisionReader:
     """localhost の Ollama で画像から数字を読む。
 

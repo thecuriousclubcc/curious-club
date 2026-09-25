@@ -69,6 +69,37 @@ python3 -m unittest discover -s tests -v   # 48 tests
 - `test_offline_guarantee.py` — ネットワーク/AI モジュールの import がないこと（AST検査）、
   ソケットを塞いだ状態で全工程が完走すること
 
+## OCR（任意）のオフライン導入
+
+院内はネットに出られないため、外部の端末で wheel を落としてUSBで持ち込む。
+
+```bash
+# ネットにつながる端末で（Windowsの院内PC向けなら --platform win_amd64）
+pip download --dest offline \
+    --platform win_amd64 --python-version 311 --only-binary=:all: \
+    rapidocr-onnxruntime
+
+# 院内の端末で
+pip install --no-index --find-links offline rapidocr-onnxruntime
+```
+
+wheel は13個・Linux版136MB / Windows版92MB。**モデルはパッケージ同梱**なので
+別途ダウンロードは発生しない。
+
+### 読み取り器の実測（実物のスキャン請求書 1通・7欄）
+
+| 読み取り器 | 正解 | 備考 |
+|---|---:|---|
+| Tesseract | 3/7 | 592,438 を「592. 9 9」と誤読、繰越額0は読めず |
+| **RapidOCR** | **7/7** | 全欄正解。確信度つき |
+| 両者一致のみ採用 | 3/7 | **一致した3件はすべて正しかった** |
+
+**標本は1通ぶんであり、一般の精度ではない。** 業者ごとにレイアウトが違うので、
+実データで測り直すこと。なお精度が低くても安全性は変わらない
+（合意・検算・2σが効く）。変わるのは自動で通る率だけ。
+
+生成AIは使っていない。RapidOCR は PP-OCRv4（CNN/CRNN系）の画像認識。
+
 ## 本番前に銀行の仕様書と突き合わせる3点
 
 `zengin/format.py` 末尾の FIELD NOTES を参照。鹿児島銀行の

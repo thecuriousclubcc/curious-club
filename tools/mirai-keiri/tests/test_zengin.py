@@ -842,3 +842,55 @@ class TestHistory2SD(unittest.TestCase):
         for i in range(30):
             h.append("P", i, keep=5)
         self.assertEqual(h.amounts("P"), [25, 26, 27, 28, 29])
+
+
+class TestRapidOcrReader(unittest.TestCase):
+    """実物のスキャンで測った結果を退行検知として固定する。
+
+    標本は請求書1通ぶん（7欄）。一般の精度ではないが、
+    「前は読めていたものが読めなくなった」は検知できる。
+    """
+
+    SAMPLE = "/tmp/claude-0/inv/inv510_p1_0.png"
+    BOX = (1195, 710, 1330, 752)      # 今回御請求額
+    TRUTH = 376_772
+
+    def setUp(self):
+        import os
+        try:
+            import rapidocr_onnxruntime  # noqa: F401
+        except ImportError:
+            self.skipTest("rapidocr 未導入のためスキップ")
+        if not os.path.exists(self.SAMPLE):
+            self.skipTest("実物サンプルが無い環境のためスキップ")
+
+    def test_reads_the_real_amount(self):
+        from zengin.readers import RapidOcrReader
+        self.assertEqual(RapidOcrReader().read(self.SAMPLE, self.BOX, "金額"),
+                         [self.TRUTH])
+
+    def test_low_confidence_is_rejected(self):
+        from zengin.readers import RapidOcrReader
+        # 確信度の下限を 1.0 にすれば、どんな読みも採用されない
+        self.assertEqual(
+            RapidOcrReader(min_confidence=1.0).read(self.SAMPLE, self.BOX, "金額"),
+            [])
+
+    def test_cross_read_with_tesseract_agrees_on_this_cell(self):
+        from zengin.readers import RapidOcrReader, TesseractReader, cross_read
+        r = cross_read(self.SAMPLE, self.BOX, "金額",
+                       [RapidOcrReader(), TesseractReader()])
+        self.assertTrue(r.agreed, r.why)
+        self.assertEqual(r.value, self.TRUTH)
+
+    def test_disagreement_yields_nothing(self):
+        from zengin.readers import cross_read
+
+        class Always:
+            def __init__(self, n, v): self.name, self._v = n, v
+            def read(self, *a): return [self._v]
+
+        r = cross_read(self.SAMPLE, self.BOX, "金額",
+                       [Always("a", 1), Always("b", 2)])
+        self.assertFalse(r.agreed)
+        self.assertIn("不一致", r.why)

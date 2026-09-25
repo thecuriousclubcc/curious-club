@@ -5,3 +5,4 @@ data/payees.csv
 data/invoices-*.csv
 data/history.json
 data/requester.json
+dist/offline/
