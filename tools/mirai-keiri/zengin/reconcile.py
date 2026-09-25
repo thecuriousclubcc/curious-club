@@ -52,10 +52,18 @@ class ReconcileResult:
     skipped: list[str] = field(default_factory=list)
     failures: list[str] = field(default_factory=list)
 
+    corroborated: bool = False   # 支払額が検算で裏取りされたか
+
     @property
     def payable(self) -> bool:
-        """自動で先に進めてよいか。ひとつでも不整合なら人に上げる。"""
-        return self.ok and not self.failures
+        """自動で先に進めてよいか。
+
+        不整合がないだけでは足りない。**支払額そのものが少なくとも1つの
+        検算で裏取りされていること**を要求する。読み取れた項目が少ないと
+        検算は「できない(skipped)」になるが、それは「合格」ではない。
+        1回しか読んでいない数字をそのまま振り込むのが一番危ない。
+        """
+        return self.ok and not self.failures and self.corroborated
 
 
 def reconcile(f: InvoiceFigures, *, tax_rate: str = "0.10",
@@ -91,10 +99,23 @@ def reconcile(f: InvoiceFigures, *, tax_rate: str = "0.10",
         skipped.append("今回合計金額")
 
     # 今回御請求額 = 繰越額 + 今回合計金額
+    corroborated = False
     if f.carried_over is not None and f.subtotal is not None:
+        before = len(failures)
         check("今回御請求額", f.total_billed, f.carried_over + f.subtotal)
+        if f.total_billed is not None and len(failures) == before:
+            corroborated = True
     else:
         skipped.append("今回御請求額")
+
+    # 裏取りの代替経路: 繰越が読めなくても 買上+税 と一致すれば認める
+    # （繰越0の請求書ではこちらが効く）
+    if (not corroborated and f.total_billed is not None
+            and f.purchases is not None and f.tax is not None
+            and f.carried_over in (0, None)):
+        if f.total_billed == f.purchases + f.tax:
+            checked.append("今回御請求額(買上+税との一致)")
+            corroborated = True
 
     # 消費税 ≈ 買上額 × 税率（端数処理の差は許容）
     if f.purchases is not None and f.tax is not None:
@@ -119,8 +140,13 @@ def reconcile(f: InvoiceFigures, *, tax_rate: str = "0.10",
     elif f.total_billed < 0:
         failures.append(f"今回御請求額が負です: {f.total_billed:,}")
 
-    return ReconcileResult(ok=not failures, checked=checked,
-                           skipped=skipped, failures=failures)
+    if f.total_billed is not None and not corroborated:
+        failures.append(
+            "今回御請求額を裏取りできませんでした（他の欄が読めていないため"
+            "検算が成立しない）。1回しか読めていない金額は採用しません。")
+
+    return ReconcileResult(ok=not failures, checked=checked, skipped=skipped,
+                           failures=failures, corroborated=corroborated)
 
 
 def accept_or_raise(f: InvoiceFigures, **kw) -> int:

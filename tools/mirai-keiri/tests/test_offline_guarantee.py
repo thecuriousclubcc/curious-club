@@ -21,9 +21,14 @@ sys.path.insert(0, str(PACKAGE.parent))
 FORBIDDEN_IMPORTS = {
     "socket", "http", "httplib", "urllib", "urllib2", "urllib3", "requests",
     "httpx", "aiohttp", "ftplib", "smtplib", "telnetlib", "xmlrpc",
-    "subprocess", "openai", "anthropic", "ollama", "groq", "google",
+    "openai", "anthropic", "ollama", "groq", "google",
     "transformers", "torch", "llama_cpp", "langchain", "boto3",
 }
+
+# subprocess は原則禁止。OCR が tesseract を起動するためだけに ocr.py に
+# 限って許す。許すかわりに、下の TestSubprocessIsTesseractOnly で
+# 「起動されるのは tesseract だけ」「shell=True を使わない」を機械検査する。
+SUBPROCESS_ALLOWED_IN = {"ocr.py"}
 
 
 def _module_files() -> list[Path]:
@@ -46,11 +51,57 @@ class TestNoNetworkImports(unittest.TestCase):
                     root = name.split(".")[0]
                     if root in FORBIDDEN_IMPORTS:
                         offenders.append(f"{path.name}:{node.lineno} imports {name}")
+                    if (root == "subprocess"
+                            and path.name not in SUBPROCESS_ALLOWED_IN):
+                        offenders.append(
+                            f"{path.name}:{node.lineno} imports subprocess "
+                            f"（許可は {sorted(SUBPROCESS_ALLOWED_IN)} のみ）")
         self.assertEqual(offenders, [], "ネットワーク/AI モジュールの import: " + str(offenders))
 
     def test_package_has_modules_to_check(self):
         # Guards against the check silently passing on an empty glob.
         self.assertGreaterEqual(len(_module_files()), 5)
+
+
+class TestSubprocessIsTesseractOnly(unittest.TestCase):
+    """subprocess を許した ocr.py が、tesseract 以外を起動しないこと。
+
+    「外部通信しない」という保証を、OCR の導入で黙って緩めないための検査。
+    起動対象が tesseract に固定されていること、shell=True を使わないことを
+    ソースから機械的に確かめる。
+    """
+
+    def _ocr_tree(self):
+        return ast.parse((PACKAGE / "ocr.py").read_text(encoding="utf-8"))
+
+    def test_no_shell_true_anywhere(self):
+        offenders = []
+        for node in ast.walk(self._ocr_tree()):
+            if isinstance(node, ast.keyword) and node.arg == "shell":
+                if not (isinstance(node.value, ast.Constant)
+                        and node.value.value is False):
+                    offenders.append(f"line {node.value.lineno}")
+        self.assertEqual(offenders, [], "shell=True は使わないこと")
+
+    def test_every_subprocess_call_runs_tesseract(self):
+        """argv の先頭が文字列 "tesseract" か、それを先頭に組んだ変数のみ。"""
+        src = (PACKAGE / "ocr.py").read_text(encoding="utf-8")
+        calls = [n for n in ast.walk(self._ocr_tree())
+                 if isinstance(n, ast.Call)
+                 and isinstance(n.func, ast.Attribute)
+                 and isinstance(n.func.value, ast.Name)
+                 and n.func.value.id == "subprocess"]
+        self.assertTrue(calls, "subprocess の呼び出しが見つかりません")
+        # ソース中で argv を組んでいる箇所が tesseract 始まりであること
+        self.assertIn('["tesseract"', src.replace("'", '"'),
+                      "argv の先頭が tesseract に固定されていません")
+        for c in calls:
+            self.assertEqual(c.func.attr, "run",
+                             "subprocess は run のみ（Popen/shell 系は不可）")
+
+    def test_ocr_declares_no_network_use(self):
+        src = (PACKAGE / "ocr.py").read_text(encoding="utf-8")
+        self.assertIn("外部通信なし", src)
 
 
 class TestNoSocketAtRuntime(unittest.TestCase):

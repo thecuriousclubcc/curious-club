@@ -696,3 +696,80 @@ class TestRegistrationNumber(unittest.TestCase):
                          registration_number=self.REAL)
         with self.assertRaises(ValidationError):
             registration_index({"P001": mk("P001"), "P002": mk("P002")})
+
+
+class TestCorroborationRequired(unittest.TestCase):
+    """「検算できなかった」を「合格」として扱わないこと。
+
+    実物のスキャンをOCRしたとき、7欄のうち3欄しか一致しなかった。
+    それでも当初の実装は payable=True を返していた（検算が skipped に
+    なるだけで failures が空だったため）。1回しか読めていない金額を
+    そのまま振り込むのが最も危ないので、支払額は必ず裏取りを要求する。
+    """
+
+    def fig(self, **kw):
+        from zengin.reconcile import InvoiceFigures
+        base = dict(total_billed=376_772, source_file="t.pdf", read_by="ocr")
+        base.update(kw)
+        return InvoiceFigures(**base)
+
+    def test_amount_alone_is_not_enough(self):
+        from zengin.reconcile import reconcile
+        r = reconcile(self.fig())          # 支払額しか読めていない
+        self.assertFalse(r.payable)
+        self.assertFalse(r.corroborated)
+        self.assertTrue(any("裏取り" in f for f in r.failures))
+
+    def test_purchases_plus_tax_corroborates(self):
+        from zengin.reconcile import reconcile
+        r = reconcile(self.fig(purchases=342_520, tax=34_252))
+        self.assertTrue(r.corroborated)
+        self.assertTrue(r.payable, r.failures)
+
+    def test_carried_over_path_corroborates(self):
+        from zengin.reconcile import reconcile
+        r = reconcile(self.fig(carried_over=0, subtotal=376_772))
+        self.assertTrue(r.payable, r.failures)
+
+    def test_unread_nonzero_carryover_makes_the_sum_disagree(self):
+        # 繰越が読めず、実際には繰越があった場合、買上+税とは一致しないので
+        # 裏取りに失敗する（黙って通らない）。
+        from zengin.reconcile import reconcile
+        r = reconcile(self.fig(total_billed=426_772, purchases=342_520,
+                               tax=34_252))
+        self.assertFalse(r.payable)
+
+    def test_a_single_wrong_digit_still_fails(self):
+        from zengin.reconcile import reconcile
+        r = reconcile(self.fig(total_billed=376_779, purchases=342_520,
+                               tax=34_252))
+        self.assertFalse(r.payable)
+
+
+class TestOcrConsensus(unittest.TestCase):
+    """OCRは1回では信用しない。設定を変えて読み、一致したものだけ採る。"""
+
+    def setUp(self):
+        from zengin.ocr import tesseract_available
+        if not tesseract_available():
+            self.skipTest("tesseract が無い環境のためスキップ")
+
+    def test_disagreement_yields_no_value(self):
+        from zengin.ocr import CellRead
+        r = CellRead(label="金額", value=None, votes={592_438: 3, 597_438: 1})
+        self.assertFalse(r.agreed)
+        self.assertIn("割れた", r.why)
+
+    def test_agreement_yields_a_value(self):
+        from zengin.ocr import CellRead
+        r = CellRead(label="金額", value=376_772, votes={376_772: 4})
+        self.assertTrue(r.agreed)
+        self.assertEqual(r.why, "一致")
+
+    def test_digit_parser_strips_separators(self):
+        from zengin.ocr import _digits
+        self.assertEqual(_digits("376,772"), [376772])
+        self.assertEqual(_digits("376. 772"), [376772])
+        # 罫線を "1" と拾うと 3767721 になる（実際に起きた誤読）。
+        # 正しい読みと食い違うので、多数決の段階で弾かれる。
+        self.assertNotIn(376772, _digits("376,772 1"))
