@@ -14,7 +14,7 @@ import re
 
 ORDER = ["model", "kana", "custcode", "tnumber", "fees", "reconcile",
          "history", "templates", "format", "master", "invoices", "amounts",
-         "ocr", "readers", "measure", "xlsx", "sheet", "verify", "cli"]
+         "ocr", "readers", "intake", "measure", "xlsx", "sheet", "verify", "cli"]
 
 HEADER = '''#!/usr/bin/env python3
 # -*- coding: utf-8 -*-

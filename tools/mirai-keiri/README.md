@@ -104,6 +104,28 @@ pip install --no-index --find-links offline rapidocr-onnxruntime   # OCRを使�
 > **注意:** wheel は左PCの OS と Python の版に合っていないと入らない。
 > 先に左PCで `python3 --version` を確認してから集めること。
 
+## 請求書PDFの取り込み
+
+**1ファイル＝1請求書ではない。** 実物では24ページのPDFに **16業者** の
+請求書が入っていた。業者ごとに様式も項目名も違う
+（「請求明細書」と「請求書」、表の位置も別）。1ページ目だけ見る前提では動かない。
+
+様式を知る前に業者を特定するため、**適格請求書発行事業者登録番号（T+13桁）**
+を使う。インボイス制度によりどの様式にも必ず印字され、法人番号の
+検査用数字でその場で真偽を判定できる。検査用数字が合わない読みは業者特定に
+使わないので、読み違いがそのまま誤特定になる事故が起きない。
+
+実測（実物24ページ）: 16通すべてを 0.94〜0.98 の確信度で特定。
+ハイフン区切り（T7-3200-0100-0415）も正規化して一致。所要 約5秒/ページ。
+
+ページのまとめ方:
+- 登録番号あり → その業者の請求書が始まる（or 続く）
+- 登録番号なし → 直前の請求書の続きのページ
+
+**同じ業者の請求書が2通続く場合、この規則では切れ目が決まらない。**
+その場合は「判断できない」として人に回す（黙って1通に混ぜない）。
+実物でもアイティーアイの2通が連続しており、正しく要確認になった。
+
 ## OCR（任意）のオフライン導入
 
 院内はネットに出られないため、外部の端末で wheel を落としてUSBで持ち込む。
@@ -112,10 +134,10 @@ pip install --no-index --find-links offline rapidocr-onnxruntime   # OCRを使�
 # ネットにつながる端末で（Windowsの院内PC向けなら --platform win_amd64）
 pip download --dest offline \
     --platform win_amd64 --python-version 311 --only-binary=:all: \
-    rapidocr-onnxruntime
+    rapidocr-onnxruntime pypdf
 
 # 院内の端末で
-pip install --no-index --find-links offline rapidocr-onnxruntime
+pip install --no-index --find-links offline rapidocr-onnxruntime pypdf
 ```
 
 wheel は13個・Linux版136MB / Windows版92MB。**モデルはパッケージ同梱**なので

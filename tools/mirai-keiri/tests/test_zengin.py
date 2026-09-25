@@ -1142,3 +1142,73 @@ class TestMeasure(unittest.TestCase):
             self.assertEqual(load_truth(p)["a.png"]["total_billed"], 376_772)
         finally:
             os.unlink(p)
+
+
+class TestIntake(unittest.TestCase):
+    """1ファイル＝1請求書ではない。実物は24ページに16業者が入っていた。"""
+
+    def page(self, i, num="", title=False):
+        from zengin.intake import Page
+        return Page(index=i, image_path=f"p{i}.png", registration_number=num,
+                    confidence=0.9 if num else 0.0,
+                    looks_like_first_page=title,
+                    raw_text="請求書" if title else "")
+
+    def test_each_vendor_becomes_its_own_invoice(self):
+        from zengin.intake import group_into_invoices
+        docs = group_into_invoices([
+            self.page(1, "T9310001000026"),
+            self.page(2, "T7320001000415"),
+            self.page(3, "T2340001005656")])
+        self.assertEqual([d.registration_number for d in docs],
+                         ["T9310001000026", "T7320001000415", "T2340001005656"])
+
+    def test_page_without_a_number_joins_the_previous_invoice(self):
+        from zengin.intake import group_into_invoices
+        docs = group_into_invoices([self.page(1, "T9310001000026"),
+                                    self.page(2)])
+        self.assertEqual(len(docs), 1)
+        self.assertEqual(docs[0].page_numbers, [1, 2])
+
+    def test_same_vendor_continuation_stays_one_invoice(self):
+        from zengin.intake import group_into_invoices
+        docs = group_into_invoices([self.page(1, "T7320001000415"),
+                                    self.page(2, "T7320001000415")])
+        self.assertEqual(len(docs), 1)
+        self.assertFalse(docs[0].ambiguous)
+
+    def test_same_vendor_with_a_second_title_is_flagged_not_merged(self):
+        # 同じ業者の請求書が2通続くと機械には切れない。黙って混ぜない。
+        from zengin.intake import group_into_invoices
+        docs = group_into_invoices([self.page(1, "T7320001000415", title=True),
+                                    self.page(2, "T7320001000415", title=True)])
+        self.assertTrue(docs[0].ambiguous)
+        self.assertIn("判断できません", docs[0].reason)
+
+    def test_leading_page_without_a_number_is_flagged(self):
+        from zengin.intake import group_into_invoices
+        docs = group_into_invoices([self.page(1), self.page(2, "T7320001000415")])
+        self.assertTrue(docs[0].ambiguous)
+
+    def test_hyphenated_number_in_text_is_found(self):
+        # 実物にハイフン区切りがあった（T7-3200-0100-0415）
+        import re
+        from zengin.intake import TNUMBER_PATTERN
+        from zengin.tnumber import normalize_tnumber
+        m = TNUMBER_PATTERN.search("登録番号T7-3200-0100-0415")
+        self.assertIsNotNone(m)
+        self.assertEqual(normalize_tnumber(m.group()), "T7320001000415")
+
+    def test_a_misread_number_is_not_used(self):
+        # 検査用数字が合わない読みは業者特定に使わない
+        from zengin.intake import TNUMBER_PATTERN
+        from zengin.tnumber import normalize_tnumber
+        m = TNUMBER_PATTERN.search("登録番号T7-3200-0100-0416")
+        with self.assertRaises(ValidationError):
+            normalize_tnumber(m.group())
+
+    def test_summary_marks_ambiguous_invoices(self):
+        from zengin.intake import group_into_invoices, summarise
+        docs = group_into_invoices([self.page(1, "T7320001000415", title=True),
+                                    self.page(2, "T7320001000415", title=True)])
+        self.assertIn("要確認", "\n".join(summarise(docs)))
