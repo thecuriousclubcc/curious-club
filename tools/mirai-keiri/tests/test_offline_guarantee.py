@@ -20,7 +20,7 @@ sys.path.insert(0, str(PACKAGE.parent))
 
 # Modules that would give the pipeline a way off the machine, or to a model.
 FORBIDDEN_IMPORTS = {
-    "socket", "http", "httplib", "urllib2", "urllib3", "requests",
+    "socket", "httplib", "urllib2", "urllib3", "requests",
     "httpx", "aiohttp", "ftplib", "smtplib", "telnetlib", "xmlrpc",
     "openai", "anthropic", "ollama", "groq", "google",
     "transformers", "torch", "llama_cpp", "langchain", "boto3",
@@ -38,6 +38,15 @@ SUBPROCESS_ALLOWED_IN = {"ocr.py"}
 #   新「**この機械の外へは出ない**」（機械検査つき）
 URLLIB_ALLOWED_IN = {"readers.py"}
 LOCAL_HOSTS = ("127.0.0.1", "localhost", "::1")
+
+# http.server は確認画面のためだけに review_server.py に限って許す。
+# 許すかわりに TestLocalOnly が「127.0.0.1 にしか束縛しない」を検査する。
+# 画面はこの端末の中だけで動き、データは機外に出ない。
+HTTP_ALLOWED_IN = {"review_server.py"}
+
+# urllib.parse は文字列処理であって通信しない。どこでも使ってよい。
+# 通信するのは urllib.request / urllib.error のみ。
+URLLIB_NETWORK_SUBMODULES = ("request", "error")
 
 
 def _module_files() -> list[Path]:
@@ -60,11 +69,17 @@ class TestNoNetworkImports(unittest.TestCase):
                     root = name.split(".")[0]
                     if root in FORBIDDEN_IMPORTS:
                         offenders.append(f"{path.name}:{node.lineno} imports {name}")
-                    if (root == "urllib"
-                            and path.name not in URLLIB_ALLOWED_IN):
+                    if root == "urllib" and path.name not in URLLIB_ALLOWED_IN:
+                        sub = name.split(".")[1] if "." in name else ""
+                        if sub in URLLIB_NETWORK_SUBMODULES or not sub:
+                            offenders.append(
+                                f"{path.name}:{node.lineno} imports {name} "
+                                f"（通信する urllib の許可は "
+                                f"{sorted(URLLIB_ALLOWED_IN)} のみ）")
+                    if root == "http" and path.name not in HTTP_ALLOWED_IN:
                         offenders.append(
-                            f"{path.name}:{node.lineno} imports urllib "
-                            f"（許可は {sorted(URLLIB_ALLOWED_IN)} のみ）")
+                            f"{path.name}:{node.lineno} imports {name} "
+                            f"（許可は {sorted(HTTP_ALLOWED_IN)} のみ）")
                     if (root == "subprocess"
                             and path.name not in SUBPROCESS_ALLOWED_IN):
                         offenders.append(
@@ -138,7 +153,13 @@ class TestLocalOnly(unittest.TestCase):
         host = OLLAMA_URL.split("//", 1)[1].split("/")[0].split(":")[0]
         self.assertIn(host, LOCAL_HOSTS, f"宛先が loopback ではない: {OLLAMA_URL}")
 
-    def test_only_readers_py_imports_urllib(self):
+    def test_only_readers_py_makes_network_urllib_calls(self):
+        """通信する urllib（request/error）は readers.py だけ。
+
+        urllib.parse は文字列処理であって通信しないので、確認画面など
+        どこで使ってもよい。ここを一緒くたに禁止すると、意味のない
+        禁止になって本当に見たいものが埋もれる。
+        """
         offenders = []
         for path in _module_files():
             if path.name in URLLIB_ALLOWED_IN:
@@ -150,8 +171,13 @@ class TestLocalOnly(unittest.TestCase):
                     mods = [a.name for a in node.names]
                 elif isinstance(node, ast.ImportFrom):
                     mods = [node.module or ""]
-                if any(m.split(".")[0] == "urllib" for m in mods):
-                    offenders.append(f"{path.name}:{node.lineno}")
+                for m in mods:
+                    bits = m.split(".")
+                    if bits[0] != "urllib":
+                        continue
+                    sub = bits[1] if len(bits) > 1 else ""
+                    if sub in URLLIB_NETWORK_SUBMODULES or not sub:
+                        offenders.append(f"{path.name}:{node.lineno} {m}")
         self.assertEqual(offenders, [])
 
     def test_every_request_uses_the_loopback_constant(self):
@@ -196,6 +222,33 @@ class TestLocalOnly(unittest.TestCase):
     def _name_of(call: ast.Call) -> str:
         fn = call.func
         return fn.attr if isinstance(fn, ast.Attribute) else getattr(fn, "id", "")
+
+    def test_review_server_binds_only_to_loopback(self):
+        """確認画面が外から繋がる場所に立たないこと。"""
+        from zengin.review_server import BIND_HOST
+        self.assertIn(BIND_HOST, LOCAL_HOSTS)
+
+    def test_server_is_constructed_with_the_bind_constant(self):
+        """束縛先がリテラルで書き換えられていないこと。"""
+        tree = ast.parse((PACKAGE / "review_server.py").read_text("utf-8"))
+        found = False
+        for node in ast.walk(tree):
+            if (isinstance(node, ast.Call)
+                    and getattr(node.func, "id", "") == "ThreadingHTTPServer"):
+                found = True
+                addr = node.args[0]
+                self.assertIsInstance(addr, ast.Tuple)
+                host = addr.elts[0]
+                self.assertIsInstance(
+                    host, ast.Name,
+                    "束縛先はリテラルではなく BIND_HOST 定数で書くこと")
+                self.assertEqual(host.id, "BIND_HOST")
+        self.assertTrue(found, "サーバの生成が見つかりません")
+
+    def test_no_bind_all_interfaces_anywhere(self):
+        src = (PACKAGE / "review_server.py").read_text("utf-8")
+        for bad in ('"0.0.0.0"', "'0.0.0.0'", '"::"'):
+            self.assertNotIn(bad, src, f"全インタフェースへの束縛: {bad}")
 
     def test_no_url_building_from_parts(self):
         """http:// を含む文字列リテラルが readers.py に無いこと（定数を除く）。"""

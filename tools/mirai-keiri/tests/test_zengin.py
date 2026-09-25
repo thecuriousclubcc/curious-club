@@ -1212,3 +1212,120 @@ class TestIntake(unittest.TestCase):
         docs = group_into_invoices([self.page(1, "T7320001000415", title=True),
                                     self.page(2, "T7320001000415", title=True)])
         self.assertIn("要確認", "\n".join(summarise(docs)))
+
+
+class TestReviewGate(unittest.TestCase):
+    """UIから検算を迂回できないこと。ここが破れると全部が無意味になる。"""
+
+    def q(self, total=None, hist=None):
+        from zengin.history import History
+        from zengin.reconcile import InvoiceFigures
+        from zengin.review import ReviewQueue, ReviewItem, UNREADABLE
+        fig = InvoiceFigures(purchases=342_520, tax=34_252, total_billed=total)
+        return ReviewQueue(
+            [ReviewItem("i1", "P001", "テスト商事", UNREADABLE, fig)],
+            History({"P001": hist} if hist else {}))
+
+    def test_bank_file_is_refused_while_anything_is_pending(self):
+        with self.assertRaises(ValidationError) as cm:
+            self.q().guard_output()
+        self.assertIn("銀行用ファイルは作りません", str(cm.exception))
+
+    def test_typo_is_rejected_by_the_same_reconciliation(self):
+        # 3,767,721 は実際に起きたOCR誤読の形。手入力でも通さない。
+        q = self.q(hist=[370_000, 375_000, 372_000, 378_000])
+        item = q.resolve("i1", 3_767_721, who="田中")
+        self.assertFalse(item.resolved)
+        self.assertFalse(q.is_clear)
+
+    def test_correct_value_resolves_and_records_who(self):
+        q = self.q(hist=[370_000, 375_000, 372_000, 378_000])
+        item = q.resolve("i1", 376_772, who="田中")
+        self.assertTrue(item.resolved)
+        self.assertTrue(q.is_clear)
+        self.assertEqual(item.override.entered, 376_772)
+        self.assertEqual(item.override.who, "田中")
+        q.guard_output()          # 例外が出ないこと
+
+    def test_manual_value_also_goes_through_the_2sd_check(self):
+        # 検算は通るが履歴から外れる額は、手入力でも自動で確定しない
+        from zengin.reconcile import InvoiceFigures
+        from zengin.review import ReviewQueue, ReviewItem, UNREADABLE, OUTLIER
+        from zengin.history import History
+        fig = InvoiceFigures(purchases=9_000_000, tax=900_000, total_billed=None)
+        q = ReviewQueue([ReviewItem("i1", "P001", "テスト", UNREADABLE, fig)],
+                        History({"P001": [370_000, 375_000, 372_000, 378_000]}))
+        item = q.resolve("i1", 9_900_000, who="田中")
+        self.assertFalse(item.resolved)
+        self.assertEqual(item.reason, OUTLIER)
+
+    def test_outlier_can_be_passed_with_a_written_reason(self):
+        from zengin.reconcile import InvoiceFigures
+        from zengin.review import ReviewQueue, ReviewItem, UNREADABLE
+        from zengin.history import History
+        fig = InvoiceFigures(purchases=9_000_000, tax=900_000, total_billed=None)
+        q = ReviewQueue([ReviewItem("i1", "P001", "テスト", UNREADABLE, fig)],
+                        History({"P001": [370_000, 375_000, 372_000, 378_000]}))
+        item = q.force_resolve("i1", 9_900_000, who="田中",
+                               reason="機器の一括購入のため")
+        self.assertTrue(item.resolved)
+        self.assertIn("機器の一括購入", item.override.note)
+
+    def test_reconciliation_can_never_be_forced(self):
+        # 2σは人の判断で通せるが、請求書の中の計算が合わない額は通せない
+        q = self.q()
+        with self.assertRaises(ValidationError) as cm:
+            q.force_resolve("i1", 999_999, who="田中", reason="急ぎ")
+        self.assertIn("飛ばせません", str(cm.exception))
+
+    def test_force_resolve_requires_a_reason(self):
+        q = self.q()
+        with self.assertRaises(ValidationError):
+            q.force_resolve("i1", 376_772, who="田中", reason="  ")
+
+    def test_who_is_required(self):
+        with self.assertRaises(ValidationError):
+            self.q().resolve("i1", 376_772, who="  ")
+
+    def test_float_and_zero_are_rejected(self):
+        for bad in (1234.0, 0, -1, True):
+            with self.assertRaises(ValidationError):
+                self.q().resolve("i1", bad, who="田中")
+
+    def test_summary_text_is_plain_japanese(self):
+        self.assertIn("確認待ち 1件", self.q().summary())
+        q = self.q(hist=[370_000, 375_000, 372_000, 378_000])
+        q.resolve("i1", 376_772, who="田中")
+        self.assertIn("確認待ちなし", q.summary())
+
+
+class TestReviewServer(unittest.TestCase):
+    """確認画面はこの端末の中だけ。文言は経理の方が読めること。"""
+
+    def page(self, q):
+        from zengin.review_server import _page
+        return _page(q)
+
+    def test_pending_page_says_the_file_will_not_be_made(self):
+        html = self.page(TestReviewGate().q())
+        self.assertIn("あなたの確認待ち 1件", html)
+        self.assertIn("銀行に出すファイルは作られません", html)
+
+    def test_clear_page_says_the_file_can_be_made(self):
+        q = TestReviewGate().q(hist=[370_000, 375_000, 372_000, 378_000])
+        q.resolve("i1", 376_772, who="田中")
+        html = self.page(q)
+        self.assertIn("確認待ちなし", html)
+        self.assertIn("銀行に出すファイルを作れます", html)
+
+    def test_payee_name_is_escaped(self):
+        from zengin.reconcile import InvoiceFigures
+        from zengin.review import ReviewQueue, ReviewItem, UNREADABLE
+        q = ReviewQueue([ReviewItem(
+            "i1", "P001", "<script>alert(1)</script>", UNREADABLE,
+            InvoiceFigures(total_billed=None))])
+        self.assertNotIn("<script>", self.page(q))
+
+    def test_bind_host_is_loopback(self):
+        from zengin.review_server import BIND_HOST
+        self.assertIn(BIND_HOST, ("127.0.0.1", "localhost", "::1"))
