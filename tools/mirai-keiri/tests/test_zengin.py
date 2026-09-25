@@ -773,3 +773,72 @@ class TestOcrConsensus(unittest.TestCase):
         # 罫線を "1" と拾うと 3767721 になる（実際に起きた誤読）。
         # 正しい読みと食い違うので、多数決の段階で弾かれる。
         self.assertNotIn(376772, _digits("376,772 1"))
+
+
+class TestHistory2SD(unittest.TestCase):
+    """平均±2σ だけでは小標本で取りこぼす。中央値+MAD を併走させる。"""
+
+    def h(self, **kw):
+        from zengin.history import History
+        return History(kw)
+
+    def test_normal_amount_passes(self):
+        h = self.h(P=[132_000, 132_000, 131_500, 132_500, 132_000])
+        self.assertFalse(h.assess("P", 132_000).needs_review)
+
+    def test_double_amount_is_flagged(self):
+        h = self.h(P=[132_000, 132_000, 131_500, 132_500, 132_000])
+        self.assertTrue(h.assess("P", 264_000).needs_review)
+
+    def test_mean_sd_alone_would_miss_this_but_mad_catches_it(self):
+        # 過去に1回だけ巨額があると σ が膨らみ、平均±2σ は反応しない。
+        import statistics
+        past = [100_000, 102_000, 98_000, 900_000, 101_000]
+        mean, sd = statistics.fmean(past), statistics.stdev(past)
+        z = (130_000 - mean) / sd
+        self.assertLess(abs(z), 2.0, "前提: 2σ では反応しないこと")
+        a = self.h(P=past).assess("P", 130_000)
+        self.assertTrue(a.needs_review, "MAD 判定が拾うこと")
+        self.assertIn("中央値", a.reasons[0])
+
+    def test_constant_payee_any_change_is_flagged(self):
+        h = self.h(P=[88_000, 88_000, 88_000, 88_000])
+        self.assertFalse(h.assess("P", 88_000).needs_review)
+        self.assertTrue(h.assess("P", 88_500).needs_review)
+
+    def test_new_payee_is_always_flagged(self):
+        self.assertTrue(self.h().assess("NEW", 1).needs_review)
+
+    def test_short_history_is_flagged_not_silently_passed(self):
+        a = self.h(P=[50_000, 51_000]).assess("P", 52_000)
+        self.assertTrue(a.needs_review)
+        self.assertIn("履歴が2件", a.reasons[0])
+
+    def test_min_absolute_yen_suppresses_trivial_noise(self):
+        h = self.h(P=[100_000, 100_001, 99_999, 100_000])
+        self.assertTrue(h.assess("P", 100_050).needs_review)
+        self.assertFalse(
+            h.assess("P", 100_050, min_absolute_yen=1_000).needs_review)
+
+    def test_append_and_roundtrip(self):
+        import tempfile, os
+        from zengin.history import History
+        h = History()
+        for x in (100, 200, 300):
+            h.append("P", x)
+        with tempfile.TemporaryDirectory() as d:
+            p = os.path.join(d, "h.json")
+            h.save(p)
+            self.assertEqual(History.load(p).amounts("P"), [100, 200, 300])
+
+    def test_append_rejects_float(self):
+        from zengin.history import History
+        with self.assertRaises(TypeError):
+            History().append("P", 1.5)
+
+    def test_keep_limits_history_length(self):
+        from zengin.history import History
+        h = History()
+        for i in range(30):
+            h.append("P", i, keep=5)
+        self.assertEqual(h.amounts("P"), [25, 26, 27, 28, 29])

@@ -116,9 +116,13 @@ def main(argv: list[str] | None = None) -> int:
     print(f"全銀ファイル: {zengin_path} ({len(raw)} バイト)")
     print(f"件数: {batch.total_count}  合計: {batch.total_amount:,} 円")
     if anomalies:
-        print(f"\n確認事項 {len(anomalies)} 件（承認前に確認してください）:")
+        flagged = len({a.payee_id for a in anomalies})
+        print(f"\n確認事項 {len(anomalies)} 件 / 支払先 {flagged} 先"
+              f"（全 {batch.total_count} 先中）— 承認前に確認してください:")
         for a in anomalies:
-            print(f"  - {a.payee_id}: {a.message}")
+            print(f"  - [{a.kind}] {a.payee_id}: {a.message}")
+    else:
+        print("\n確認事項: なし（全件が過去の範囲内）")
     print("\n次の手順: 振込一覧表を承認者が確認・押印 → FB-Web に全銀ファイルを送信。")
     return 0
 

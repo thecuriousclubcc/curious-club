@@ -9,7 +9,6 @@ the money path stays identical regardless of how the document was read.
 from __future__ import annotations
 
 import csv
-import statistics
 from dataclasses import dataclass, field
 from datetime import date, datetime
 from pathlib import Path
@@ -89,44 +88,40 @@ def load_invoices(path: str | Path) -> list[InvoiceRow]:
 def detect_anomalies(rows: list[InvoiceRow],
                      history: dict[str, list[int]] | None = None,
                      *, sigma: float = 2.0) -> list[Anomaly]:
-    """Flag rows that need a human's eyes before the file is built.
+    """人の目を向けさせる先を挙げる。統計計算のみでモデルは使わない。
 
-    Pure arithmetic - no model, no inference. A flag never blocks the run by
-    itself; it marks the row in the review sheet so the approver looks at it.
+    判定の本体は history.py（平均±2σ と 中央値+MAD の併走）。
+    ここは請求書行を支払先ごとに合算して渡すだけ。
+    フラグは処理を止めない。振込一覧表に印をつけるだけ。
     """
+    from .history import History
+
     out: list[Anomaly] = []
-    history = history or {}
-
-    totals: dict[str, int] = {}
-    for r in rows:
-        totals[r.payee_id] = totals.get(r.payee_id, 0) + r.amount
-
     for r in rows:
         if r.amount <= 0:
             out.append(Anomaly(r.payee_id, "amount",
                                f"請求額が0以下です ({r.amount:,}円 / {r.invoice_no})"))
 
+    totals: dict[str, int] = {}
+    for r in rows:
+        totals[r.payee_id] = totals.get(r.payee_id, 0) + r.amount
+
+    h = History(history or {})
     for pid, total in totals.items():
-        past = history.get(pid) or []
-        if len(past) < 3:
-            if not past:
-                out.append(Anomaly(pid, "new_payee",
-                                   f"初回の支払先です（履歴なし・{total:,}円）"))
+        a = h.assess(pid, total, sigma=sigma)
+        if not a.needs_review:
             continue
-        mean = statistics.fmean(past)
-        sd = statistics.pstdev(past)
-        if sd == 0:
-            if total != past[-1]:
-                out.append(Anomaly(
-                    pid, "changed",
-                    f"毎回同額（{past[-1]:,}円）でしたが今回 {total:,}円 です"))
-            continue
-        z = (total - mean) / sd
-        if abs(z) >= sigma:
-            out.append(Anomaly(
-                pid, "outlier",
-                f"過去平均 {mean:,.0f}円 (σ={sd:,.0f}) に対し今回 {total:,}円 "
-                f"— {z:+.1f}σ の乖離"))
+        past = h.amounts(pid)
+        if not past:
+            kind = "new_payee"
+        elif len(past) < 3:
+            kind = "short_history"
+        elif a.stats.get("sd") == 0:
+            kind = "changed"
+        else:
+            kind = "outlier"
+        for reason in a.reasons:
+            out.append(Anomaly(pid, kind, reason))
 
     return out
 
