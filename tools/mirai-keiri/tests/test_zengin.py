@@ -577,3 +577,67 @@ class TestAmountSource(unittest.TestCase):
             with open(path, encoding="cp932", newline="") as fh:
                 total = sum(int(r["金額"]) for r in csv.DictReader(fh))
         self.assertEqual(total, batch.total_amount)
+
+
+class TestInvoiceReconciliation(unittest.TestCase):
+    """読み取り器が誰であれ、合否は計算が決める。"""
+
+    def real(self, **kw):
+        from zengin.reconcile import InvoiceFigures
+        # アイティーアイ(株) 2026-07-31 請求明細書 No.1099365 の実数字
+        base = dict(previous_billed=592_438, payment_received=592_438,
+                    carried_over=0, purchases=342_520, tax=34_252,
+                    subtotal=376_772, total_billed=376_772,
+                    source_file="test.pdf", read_by="test")
+        base.update(kw)
+        return InvoiceFigures(**base)
+
+    def test_real_invoice_reconciles(self):
+        from zengin.reconcile import accept_or_raise, reconcile
+        r = reconcile(self.real())
+        self.assertTrue(r.payable, r.failures)
+        self.assertEqual(accept_or_raise(self.real()), 376_772)
+
+    def test_misread_total_is_caught(self):
+        from zengin.reconcile import accept_or_raise
+        with self.assertRaises(ValidationError) as cm:
+            accept_or_raise(self.real(total_billed=376_712))
+        self.assertIn("今回御請求額", str(cm.exception))
+
+    def test_misread_tax_is_caught(self):
+        from zengin.reconcile import reconcile
+        r = reconcile(self.real(tax=3_425))
+        self.assertFalse(r.payable)
+
+    def test_transposed_digits_in_purchases_is_caught(self):
+        # 342,520 -> 342,250 （桁の入れ替わりはOCRの典型的な誤り）
+        from zengin.reconcile import reconcile
+        self.assertFalse(reconcile(self.real(purchases=342_250)).payable)
+
+    def test_tax_rounding_within_one_yen_is_tolerated(self):
+        # 端数処理は業者ごとに違う。±1円は許容する。
+        from zengin.reconcile import reconcile
+        self.assertTrue(reconcile(self.real(
+            purchases=342_521, tax=34_252, subtotal=376_773,
+            total_billed=376_773)).payable)
+
+    def test_missing_total_never_passes(self):
+        from zengin.reconcile import reconcile
+        self.assertFalse(reconcile(self.real(total_billed=None)).payable)
+
+    def test_partial_read_skips_rather_than_guesses(self):
+        # 取れなかった項目は「検算できない」であって「合格」ではない。
+        from zengin.reconcile import reconcile
+        r = reconcile(self.real(previous_billed=None, payment_received=None,
+                                carried_over=None))
+        self.assertIn("繰越額", r.skipped)
+        self.assertNotIn("繰越額", r.checked)
+
+    def test_line_items_total_is_checked_when_present(self):
+        from zengin.reconcile import reconcile
+        self.assertTrue(reconcile(self.real(line_items_total=342_520)).payable)
+        self.assertFalse(reconcile(self.real(line_items_total=342_000)).payable)
+
+    def test_negative_total_is_rejected(self):
+        from zengin.reconcile import reconcile
+        self.assertFalse(reconcile(self.real(total_billed=-1)).payable)
