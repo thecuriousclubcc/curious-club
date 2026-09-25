@@ -1080,3 +1080,65 @@ class TestTemplates(unittest.TestCase):
         from zengin.templates import load_templates
         with self.assertRaises(ValidationError):
             load_templates("/nonexistent/templates.json")
+
+
+class TestMeasure(unittest.TestCase):
+    """読み取り器の実力を数字で出す。最重要は誤自動通過が0であること。"""
+
+    def out(self, **kw):
+        from zengin.measure import Outcome, PASSED
+        base = dict(source="a.png", preset="rapidocr", verdict=PASSED)
+        base.update(kw)
+        return Outcome(**base)
+
+    def test_false_accept_is_detected(self):
+        # 自動で通ったのに金額が違う ＝ あってはならない
+        self.assertTrue(self.out(amount=1, truth=2).is_false_accept)
+
+    def test_correct_pass_is_not_a_false_accept(self):
+        o = self.out(amount=376_772, truth=376_772)
+        self.assertTrue(o.is_correct_pass)
+        self.assertFalse(o.is_false_accept)
+
+    def test_sent_to_human_is_never_a_false_accept(self):
+        from zengin.measure import NEED_RECONCILE
+        o = self.out(verdict=NEED_RECONCILE, amount=1, truth=2)
+        self.assertFalse(o.is_false_accept, "人へ回したものは誤通過ではない")
+
+    def test_unknown_truth_is_not_counted_as_false_accept(self):
+        self.assertFalse(self.out(amount=1, truth=None).is_false_accept)
+
+    def test_summary_warns_when_false_accepts_exist(self):
+        from zengin.measure import Report
+        r = Report([self.out(amount=1, truth=2)])
+        text = "\n".join(r.summary_lines())
+        self.assertIn("誤自動通過 1件", text)
+        self.assertIn("穴がある", text)
+
+    def test_summary_counts_pass_rate(self):
+        from zengin.measure import Report, NEED_READ
+        r = Report([self.out(amount=1, truth=1),
+                    self.out(verdict=NEED_READ),
+                    self.out(amount=1, truth=1),
+                    self.out(verdict=NEED_READ)])
+        self.assertIn("4件中 自動通過 2件 (50%)", "\n".join(r.summary_lines()))
+
+    def test_missing_template_goes_to_human(self):
+        from zengin.measure import measure_one, NO_TEMPLATE
+        from zengin.templates import TemplateSet
+        o = measure_one("x.png", TemplateSet([]), "rapidocr",
+                        registration_number="T9310001000026")
+        self.assertEqual(o.verdict, NO_TEMPLATE)
+
+    def test_truth_file_parses_commas(self):
+        import tempfile, os
+        from zengin.measure import load_truth
+        with tempfile.NamedTemporaryFile("w", suffix=".csv", delete=False,
+                                         encoding="utf-8") as fh:
+            fh.write("file,registration_number,payee_id,total_billed\n"
+                     "a.png,T9310001000026,,\"376,772\"\n")
+            p = fh.name
+        try:
+            self.assertEqual(load_truth(p)["a.png"]["total_billed"], 376_772)
+        finally:
+            os.unlink(p)
