@@ -202,3 +202,44 @@ def cross_read(image_path: str, box: tuple[int, int, int, int], label: str,
     ok = len(values) == len(readers) and len(set(values)) == 1
     return CrossRead(label=label, value=values[0] if ok else None,
                      per_reader=per)
+
+
+# 読み取り器の選び方
+#   "rapidocr"          既定。実測で最良（実物7欄中7正解）。モデル同梱・取得不要
+#   "rapidocr+tesseract" 2つの一致のみ採用。自動通過率は下がるが安全側
+#   "ollama"            VLM。**未検証**。RapidOCR で足りない業者が出た場合の控え
+#   "rapidocr+ollama"   上の2つの一致のみ採用
+#   "tesseract"         比較用
+PRESETS = {
+    "rapidocr": ["rapidocr"],
+    "tesseract": ["tesseract"],
+    "ollama": ["ollama"],
+    "rapidocr+tesseract": ["rapidocr", "tesseract"],
+    "rapidocr+ollama": ["rapidocr", "ollama"],
+    "all": ["rapidocr", "tesseract", "ollama"],
+}
+
+
+def make_readers(preset: str = "rapidocr", *, ollama_model: str | None = None
+                 ) -> list[FieldReader]:
+    """名前から読み取り器を組み立てる。
+
+    VLM(ollama) は**未検証**のため既定には入れない。RapidOCR で読めない
+    業者が出たときの控えとして選べるようにしてある。どれを選んでも、
+    後段の検算と2σ判定は同じように効く。
+    """
+    if preset not in PRESETS:
+        raise ValidationError(
+            f"読み取り器の指定が不正です: {preset!r}。"
+            f"選べるのは {', '.join(sorted(PRESETS))}")
+
+    built: list[FieldReader] = []
+    for name in PRESETS[preset]:
+        if name == "rapidocr":
+            built.append(RapidOcrReader())
+        elif name == "tesseract":
+            built.append(TesseractReader())
+        elif name == "ollama":
+            built.append(OllamaVisionReader(model=ollama_model)
+                         if ollama_model else OllamaVisionReader())
+    return built

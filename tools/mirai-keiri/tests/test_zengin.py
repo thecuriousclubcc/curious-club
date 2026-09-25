@@ -894,3 +894,96 @@ class TestRapidOcrReader(unittest.TestCase):
                        [Always("a", 1), Always("b", 2)])
         self.assertFalse(r.agreed)
         self.assertIn("不一致", r.why)
+
+
+class TestReaderSelection(unittest.TestCase):
+    """RapidOCR を既定にし、VLM は控えとして選べること。"""
+
+    def test_default_is_rapidocr_only(self):
+        from zengin.readers import make_readers
+        self.assertEqual([r.name for r in make_readers()], ["rapidocr"])
+
+    def test_vlm_is_not_in_the_default(self):
+        # 未検証のものを黙って既定に入れない
+        from zengin.readers import make_readers
+        self.assertNotIn("ollama", [r.name for r in make_readers()])
+
+    def test_backup_preset_pairs_rapidocr_with_vlm(self):
+        from zengin.readers import make_readers
+        self.assertEqual([r.name for r in make_readers("rapidocr+ollama")],
+                         ["rapidocr", "ollama"])
+
+    def test_unknown_preset_raises_with_the_choices(self):
+        from zengin.readers import make_readers
+        with self.assertRaises(ValidationError) as cm:
+            make_readers("gpt")
+        self.assertIn("rapidocr", str(cm.exception))
+
+    def test_ollama_model_can_be_overridden(self):
+        from zengin.readers import make_readers
+        r = make_readers("ollama", ollama_model="qwen2.5vl:7b")[0]
+        self.assertEqual(r.model, "qwen2.5vl:7b")
+
+
+class TestTransferBundle(unittest.TestCase):
+    """搬入一式の照合（USB不可・共有フォルダ経由のため）。"""
+
+    def _bundle(self, tmp):
+        import subprocess, sys, pathlib
+        root = pathlib.Path(__file__).resolve().parent.parent
+        wheels = pathlib.Path(tmp) / "wh"
+        wheels.mkdir()
+        (wheels / "x-1.0-py3-none-any.whl").write_bytes(b"dummy wheel")
+        out = pathlib.Path(tmp) / "bundle"
+        r = subprocess.run(
+            [sys.executable, "make_transfer_bundle.py",
+             "--wheels", str(wheels), "--out", str(out)],
+            cwd=root, capture_output=True, text=True)
+        self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
+        return out
+
+    def _verify(self, out):
+        import subprocess, sys
+        return subprocess.run([sys.executable, "verify_transfer.py"],
+                              cwd=out, capture_output=True, text=True)
+
+    def test_clean_bundle_verifies(self):
+        import tempfile
+        with tempfile.TemporaryDirectory() as tmp:
+            r = self._verify(self._bundle(tmp))
+            self.assertEqual(r.returncode, 0, r.stdout)
+            self.assertIn("すべて一致", r.stdout)
+
+    def test_truncated_file_is_caught(self):
+        import tempfile
+        with tempfile.TemporaryDirectory() as tmp:
+            out = self._bundle(tmp)
+            p = out / "mirai_keiri.py"
+            p.write_bytes(p.read_bytes()[:-50])
+            r = self._verify(out)
+            self.assertEqual(r.returncode, 1)
+            self.assertIn("install しないこと", r.stdout)
+
+    def test_missing_file_is_caught(self):
+        import tempfile
+        with tempfile.TemporaryDirectory() as tmp:
+            out = self._bundle(tmp)
+            (out / "mirai_keiri.py").unlink()
+            r = self._verify(out)
+            self.assertEqual(r.returncode, 1)
+            self.assertIn("見つかりません", r.stdout)
+
+    def test_unexpected_extra_file_is_reported(self):
+        import tempfile
+        with tempfile.TemporaryDirectory() as tmp:
+            out = self._bundle(tmp)
+            (out / "なぞのファイル.exe").write_text("x")
+            r = self._verify(out)
+            self.assertIn("一覧にないファイル", r.stdout)
+
+    def test_missing_manifest_refuses(self):
+        import tempfile
+        with tempfile.TemporaryDirectory() as tmp:
+            out = self._bundle(tmp)
+            (out / "MANIFEST.sha256").unlink()
+            self.assertEqual(self._verify(out).returncode, 2)

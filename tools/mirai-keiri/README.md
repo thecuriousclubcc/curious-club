@@ -69,6 +69,41 @@ python3 -m unittest discover -s tests -v   # 48 tests
 - `test_offline_guarantee.py` — ネットワーク/AI モジュールの import がないこと（AST検査）、
   ソケットを塞いだ状態で全工程が完走すること
 
+## 院内への搬入（USB不可・共有フォルダ経由）
+
+USBが契約上使えないため、**ネットにつながる端末（右PC）→ 新共有 → 閉じた端末（左PC）**
+で運ぶ。運ぶのは文書ではなく**実行コード**なので、入れる前に必ず照合する。
+
+### 右PC（ネットあり）
+
+```bash
+# 1. 左PCの OS と Python の版に合わせて wheel を集める
+pip download --dest offline \
+    --platform win_amd64 --python-version 311 --only-binary=:all: \
+    rapidocr-onnxruntime
+
+# 2. 一式にまとめる（SHA-256の一覧が付く）
+python3 build_single_file.py
+python3 make_transfer_bundle.py --wheels offline --out 搬入_20260926
+
+# 3. 出来たフォルダごと 新共有 にコピー
+```
+
+### 左PC（閉じた端末）
+
+```bash
+python3 verify_transfer.py      # ← 必ず最初。全件一致するまで進まない
+python3 mirai_keiri.py --selftest
+pip install --no-index --find-links offline rapidocr-onnxruntime   # OCRを使う場合のみ
+```
+
+共有フォルダ越しのコピーは途中で切れても「それらしいファイル」が残る。
+照合は壊れ・欠落・一覧にないファイルの混入を検出し、**1件でも合わなければ
+終了コード1で止まる**。照合はハッシュ計算だけで、ネットには出ない。
+
+> **注意:** wheel は左PCの OS と Python の版に合っていないと入らない。
+> 先に左PCで `python3 --version` を確認してから集めること。
+
 ## OCR（任意）のオフライン導入
 
 院内はネットに出られないため、外部の端末で wheel を落としてUSBで持ち込む。
