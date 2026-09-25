@@ -13,8 +13,8 @@ import pathlib
 import re
 
 ORDER = ["model", "kana", "custcode", "tnumber", "fees", "reconcile",
-         "history", "format", "master", "invoices", "amounts", "ocr",
-         "readers", "xlsx", "sheet", "verify", "cli"]
+         "history", "templates", "format", "master", "invoices", "amounts",
+         "ocr", "readers", "xlsx", "sheet", "verify", "cli"]
 
 HEADER = '''#!/usr/bin/env python3
 # -*- coding: utf-8 -*-

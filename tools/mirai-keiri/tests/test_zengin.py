@@ -987,3 +987,96 @@ class TestTransferBundle(unittest.TestCase):
             out = self._bundle(tmp)
             (out / "MANIFEST.sha256").unlink()
             self.assertEqual(self._verify(out).returncode, 2)
+
+
+class TestTemplates(unittest.TestCase):
+    """業者ごとの欄の位置を外部ファイルで持つ。座標は解像度差を吸収する。"""
+
+    def tpl(self, **kw):
+        from zengin.templates import Template
+        base = dict(template_id="t1", display_name="テスト",
+                    reference_size=(1654, 2340),
+                    fields={"今回御請求額": (1195, 710, 1330, 752)},
+                    required_fields=["今回御請求額"],
+                    registration_number="T9310001000026")
+        base.update(kw)
+        return Template(**base)
+
+    def test_same_size_returns_boxes_unchanged(self):
+        t = self.tpl()
+        self.assertEqual(t.boxes_for((1654, 2340))["今回御請求額"],
+                         (1195, 710, 1330, 752))
+
+    def test_boxes_scale_with_the_image(self):
+        t = self.tpl()
+        x0, y0, x1, y1 = t.boxes_for((3308, 4680))["今回御請求額"]
+        self.assertEqual((x0, y0, x1, y1), (2390, 1420, 2660, 1504))
+
+    def test_different_aspect_ratio_refuses(self):
+        # 向きや様式が違う画像で、黙って別の場所を読まないこと
+        with self.assertRaises(ValidationError) as cm:
+            self.tpl().boxes_for((1654, 1200))
+        self.assertIn("縦横比", str(cm.exception))
+
+    def test_box_outside_reference_is_rejected(self):
+        with self.assertRaises(ValidationError):
+            self.tpl(fields={"x": (0, 0, 9999, 100)}).validate()
+
+    def test_required_field_must_exist(self):
+        with self.assertRaises(ValidationError):
+            self.tpl(required_fields=["無い欄"]).validate()
+
+    def test_template_without_any_key_is_rejected(self):
+        # 引けないテンプレートは使えない
+        with self.assertRaises(ValidationError):
+            self.tpl(registration_number="", payee_id="").validate()
+
+    def test_lookup_normalises_the_registration_number(self):
+        from zengin.templates import TemplateSet
+        ts = TemplateSet([self.tpl()])
+        self.assertIsNotNone(ts.find(registration_number="t9310001000026"))
+
+    def test_unknown_number_returns_none(self):
+        from zengin.templates import TemplateSet
+        ts = TemplateSet([self.tpl()])
+        self.assertIsNone(ts.find(registration_number="T6120001000015"))
+        self.assertIsNone(ts.find(registration_number="ごみ"))
+
+    def test_duplicate_registration_number_raises(self):
+        from zengin.templates import TemplateSet
+        with self.assertRaises(ValidationError):
+            TemplateSet([self.tpl(template_id="a"), self.tpl(template_id="b")])
+
+    def test_duplicate_template_id_raises(self):
+        from zengin.templates import TemplateSet
+        with self.assertRaises(ValidationError):
+            TemplateSet([self.tpl(), self.tpl(registration_number="",
+                                              payee_id="P1")])
+
+    def test_unverified_template_is_visible_as_such(self):
+        self.assertFalse(self.tpl().is_verified)
+        self.assertTrue(self.tpl(verified_on="2026-09-25",
+                                 verified_by="中村").is_verified)
+
+    def test_sample_file_loads(self):
+        from zengin.templates import load_templates
+        ts = load_templates("data/templates/invoice_templates.sample.json")
+        self.assertGreaterEqual(len(ts), 1)
+
+    def test_bad_version_is_rejected(self):
+        import json, tempfile, os
+        from zengin.templates import load_templates
+        with tempfile.NamedTemporaryFile("w", suffix=".json", delete=False,
+                                         encoding="utf-8") as fh:
+            json.dump({"version": 2, "templates": []}, fh)
+            p = fh.name
+        try:
+            with self.assertRaises(ValidationError):
+                load_templates(p)
+        finally:
+            os.unlink(p)
+
+    def test_missing_file_is_rejected(self):
+        from zengin.templates import load_templates
+        with self.assertRaises(ValidationError):
+            load_templates("/nonexistent/templates.json")
